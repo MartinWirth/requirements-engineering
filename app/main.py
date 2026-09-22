@@ -13,6 +13,17 @@ actors: dict[str, Actor] = {}
 trace_links: list[TraceLink] = []
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "name": "Requirements Engineering Workbench",
+        "version": app.version,
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}

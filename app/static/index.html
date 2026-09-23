@@ -15,6 +15,8 @@
     table { border-collapse: collapse; width: max-content; min-width: 100%; background: white; }
     th, td { border: 1px solid #d8dee6; padding: 8px; vertical-align: top; }
     th { background: #eef2f7; text-align: left; position: sticky; top: 0; }
+    th.help-header { cursor: help; }
+    .header-label { border-bottom: 1px dotted #667085; }
     td input, td select { width: 180px; box-sizing: border-box; padding: 6px; }
     td input.invalid { border: 2px solid #c62828; background: #fff3f3; }
     .new-row td { background: #fffbea; }
@@ -24,6 +26,23 @@
     button { padding: 7px 12px; cursor: pointer; }
     .save { white-space: nowrap; }
     .empty { padding: 30px; text-align: center; color: #667085; }
+
+    .tooltip {
+      position: fixed;
+      z-index: 1000;
+      width: 320px;
+      max-width: calc(100vw - 32px);
+      padding: 12px 14px;
+      border-radius: 7px;
+      background: #111827;
+      color: #fff;
+      box-shadow: 0 5px 18px rgba(0,0,0,.25);
+      font-size: 13px;
+      line-height: 1.4;
+      pointer-events: auto;
+    }
+    .tooltip strong { display: block; margin-bottom: 5px; font-size: 14px; }
+    .tooltip a { color: #93c5fd; }
   </style>
 </head>
 <body>
@@ -38,14 +57,17 @@
   </div>
   <div id="tableContainer"></div>
 </main>
+<div id="tooltip" class="tooltip" hidden></div>
 
 <script>
 let schema = {};
 let selectedType = "Requirements";
+let tooltipTimer = null;
 
 const selector = document.getElementById("typeSelector");
 const tableContainer = document.getElementById("tableContainer");
 const message = document.getElementById("message");
+const tooltip = document.getElementById("tooltip");
 
 async function init() {
   const response = await fetch("/api/schema");
@@ -62,6 +84,7 @@ async function init() {
   selector.value = selectedType;
   selector.addEventListener("change", () => {
     selectedType = selector.value;
+    hideTooltip();
     loadTable();
   });
 
@@ -145,6 +168,65 @@ function createEditor(field) {
   return input;
 }
 
+function showTooltip(event, field) {
+  clearTimeout(tooltipTimer);
+  tooltip.replaceChildren();
+
+  const title = document.createElement("strong");
+  title.textContent = label(field.name);
+
+  const summary = document.createElement("div");
+  summary.textContent = field.summary;
+
+  const link = document.createElement("a");
+  link.href = field.documentation_url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "IREB-Dokumentation öffnen";
+
+  tooltip.append(title, summary, document.createElement("br"), link);
+  tooltip.hidden = false;
+
+  const x = Math.min(event.clientX + 12, window.innerWidth - tooltip.offsetWidth - 12);
+  const y = Math.min(event.clientY + 14, window.innerHeight - tooltip.offsetHeight - 12);
+  tooltip.style.left = Math.max(8, x) + "px";
+  tooltip.style.top = Math.max(8, y) + "px";
+}
+
+function scheduleHideTooltip() {
+  clearTimeout(tooltipTimer);
+  tooltipTimer = setTimeout(hideTooltip, 250);
+}
+
+function hideTooltip() {
+  clearTimeout(tooltipTimer);
+  tooltip.hidden = true;
+}
+
+tooltip.addEventListener("mouseenter", () => clearTimeout(tooltipTimer));
+tooltip.addEventListener("mouseleave", scheduleHideTooltip);
+
+function addHeaderTooltip(th, field) {
+  th.className = "help-header";
+  th.title = field.summary;
+
+  const text = document.createElement("span");
+  text.className = "header-label";
+  text.textContent = label(field.name);
+  th.appendChild(text);
+
+  th.addEventListener("mouseenter", event => showTooltip(event, field));
+  th.addEventListener("mousemove", event => {
+    if (!tooltip.hidden) {
+      const x = Math.min(event.clientX + 12, window.innerWidth - tooltip.offsetWidth - 12);
+      const y = Math.min(event.clientY + 14, window.innerHeight - tooltip.offsetHeight - 12);
+      tooltip.style.left = Math.max(8, x) + "px";
+      tooltip.style.top = Math.max(8, y) + "px";
+    }
+  });
+  th.addEventListener("mouseleave", scheduleHideTooltip);
+}
+
 async function loadTable() {
   const definition = schema[selectedType];
   const response = await fetch(definition.endpoint);
@@ -165,7 +247,7 @@ function renderTable(definition, rows) {
 
   definition.fields.forEach(field => {
     const th = document.createElement("th");
-    th.textContent = label(field.name);
+    addHeaderTooltip(th, field);
     header.appendChild(th);
   });
 

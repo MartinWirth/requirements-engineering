@@ -1,7 +1,14 @@
+from pathlib import Path
+
+import sqlite3
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+
+from .database import SQLiteStore
 from .models import Actor, Requirement, TraceLink, UseCase
 from .ui import model_schema
+
 
 app = FastAPI(
     title="Requirements Engineering Workbench",
@@ -9,15 +16,15 @@ app = FastAPI(
     description="IREB-oriented Requirements Engineering API.",
 )
 
-requirements: dict[str, Requirement] = {}
-use_cases: dict[str, UseCase] = {}
-actors: dict[str, Actor] = {}
-trace_links: list[TraceLink] = []
+store = SQLiteStore()
 
 
 @app.get("/")
 def root():
-    return FileResponse("app/static/index.html", media_type="text/html")
+    return FileResponse(
+        Path(__file__).parent / "static" / "index.html",
+        media_type="text/html",
+    )
 
 
 @app.get("/health")
@@ -32,73 +39,79 @@ def get_model_schema():
 
 @app.get("/requirements", response_model=list[Requirement])
 def list_requirements():
-    return list(requirements.values())
+    return store.list("requirements", Requirement)
 
 
 @app.post("/requirements", response_model=Requirement, status_code=201)
 def create_requirement(item: Requirement):
     if not item.id:
-        item.id = f"REQ-{Requirement.nextID(requirements.values()):03d}"
-    if item.id in requirements:
+        item.id = f"REQ-{store.next_id('requirements', Requirement):03d}"
+    try:
+        store.insert("requirements", item)
+    except sqlite3.IntegrityError:
         raise HTTPException(409, "Requirement ID already exists")
-    requirements[item.id] = item
     return item
 
 
 @app.get("/requirements/{requirement_id}", response_model=Requirement)
 def get_requirement(requirement_id: str):
-    if requirement_id not in requirements:
+    item = store.get("requirements", Requirement, requirement_id)
+    if item is None:
         raise HTTPException(404, "Requirement not found")
-    return requirements[requirement_id]
+    return item
 
 
 @app.get("/use-cases", response_model=list[UseCase])
 def list_use_cases():
-    return list(use_cases.values())
+    return store.list("use_cases", UseCase)
 
 
 @app.post("/use-cases", response_model=UseCase, status_code=201)
 def create_use_case(item: UseCase):
     if not item.id:
-        item.id = f"UC-{UseCase.nextID(use_cases.values()):03d}"
-    if item.id in use_cases:
+        item.id = f"UC-{store.next_id('use_cases', UseCase):03d}"
+    try:
+        store.insert("use_cases", item)
+    except sqlite3.IntegrityError:
         raise HTTPException(409, "Use-case ID already exists")
-    use_cases[item.id] = item
     return item
 
 
 @app.get("/use-cases/{use_case_id}", response_model=UseCase)
 def get_use_case(use_case_id: str):
-    if use_case_id not in use_cases:
+    item = store.get("use_cases", UseCase, use_case_id)
+    if item is None:
         raise HTTPException(404, "Use case not found")
-    return use_cases[use_case_id]
+    return item
 
 
 @app.get("/actors", response_model=list[Actor])
 def list_actors():
-    return list(actors.values())
+    return store.list("actors", Actor)
 
 
 @app.post("/actors", response_model=Actor, status_code=201)
 def create_actor(item: Actor):
     if not item.id:
-        item.id = f"ACT-{Actor.nextID(actors.values()):03d}"
-    if item.id in actors:
+        item.id = f"ACT-{store.next_id('actors', Actor):03d}"
+    try:
+        store.insert("actors", item)
+    except sqlite3.IntegrityError:
         raise HTTPException(409, "Actor ID already exists")
-    actors[item.id] = item
     return item
 
 
 @app.get("/traceability", response_model=list[TraceLink])
 def list_traceability():
-    return trace_links
+    return store.list("trace_links", TraceLink)
 
 
 @app.post("/traceability", response_model=TraceLink, status_code=201)
 def create_trace_link(item: TraceLink):
     if not item.id:
-        item.id = f"TRACE-{TraceLink.nextID(trace_links):03d}"
-    if any(existing.id == item.id for existing in trace_links):
+        item.id = f"TRACE-{store.next_id('trace_links', TraceLink):03d}"
+    try:
+        store.insert("trace_links", item)
+    except sqlite3.IntegrityError:
         raise HTTPException(409, "Trace link ID already exists")
-    trace_links.append(item)
     return item

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 from typing import TypeVar
@@ -67,9 +68,13 @@ class SQLiteStore:
         self._validate_table(table)
         with self._connect() as connection:
             rows = connection.execute(f"SELECT id FROM {table}").fetchall()
-        return model.nextID(
-            [model.model_validate({"id": row["id"]}) for row in rows]
-        )
+
+        numeric_ids = []
+        for row in rows:
+            match = re.search(r"(\d+)$", row["id"])
+            if match:
+                numeric_ids.append(int(match.group(1)))
+        return max(numeric_ids, default=0) + 1
 
     def insert(self, table: str, item: ModelT) -> None:
         self._validate_table(table)

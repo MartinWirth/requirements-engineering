@@ -263,15 +263,6 @@ function createEditRow(definition, row, originalRow) {
   tr.className = "edit-row";
   const editors = [];
 
-  definition.fields.forEach(field => {
-    const td = document.createElement("td");
-    const editor = createEditor(field, row[field.name]);
-    if (field.name === "id") editor.disabled = true;
-    const check = addValidation(editor, field, td);
-    editors.push({ field, editor, check });
-    tr.appendChild(td);
-  });
-
   const actionTd = document.createElement("td");
   actionTd.className = "action-cell";
 
@@ -320,6 +311,16 @@ function createEditRow(definition, row, originalRow) {
 
   actionTd.append(save, cancel);
   tr.appendChild(actionTd);
+
+  definition.fields.forEach(field => {
+    const td = document.createElement("td");
+    const editor = createEditor(field, row[field.name]);
+    if (field.name === "id") editor.disabled = true;
+    const check = addValidation(editor, field, td);
+    editors.push({ field, editor, check });
+    tr.appendChild(td);
+  });
+
   return tr;
 }
 

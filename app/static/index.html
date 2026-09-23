@@ -372,6 +372,18 @@ function renderTable(definition, rows) {
   newRow.className = "new-row";
   const editors = [];
 
+  const actionTd = document.createElement("td");
+  actionTd.className = "action-cell";
+  const create = document.createElement("button");
+  create.textContent = "Create";
+  create.dataset.url = definition.endpoint;
+  create.dataset.method = "POST";
+  create.addEventListener("click", async () => {
+    await saveObject(definition, editors, create, "Eintrag erfolgreich angelegt.");
+  });
+  actionTd.appendChild(create);
+  newRow.appendChild(actionTd);
+
   definition.fields.forEach(field => {
     const td = document.createElement("td");
     const editor = createEditor(field);
@@ -384,18 +396,7 @@ function renderTable(definition, rows) {
     newRow.appendChild(td);
   });
 
-  const actionTd = document.createElement("td");
-  actionTd.className = "action-cell";
-  const create = document.createElement("button");
-  create.textContent = "Create";
-  create.dataset.url = definition.endpoint;
-  create.dataset.method = "POST";
-  create.addEventListener("click", async () => {
-    await saveObject(definition, editors, create, "Eintrag erfolgreich angelegt.");
-  });
-  actionTd.appendChild(create);
-
-  newRow.insertBefore(actionTd, newRow.firstChild);
+  // Action cell was added before the data fields so every row uses the same column order.
   tbody.appendChild(newRow);
   table.appendChild(tbody);
   tableContainer.appendChild(table);

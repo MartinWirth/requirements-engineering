@@ -17,7 +17,7 @@ FIELD_HELP: dict[str, tuple[str, str]] = {
     "title": ("Kurzer, prägnanter Titel zur Identifikation der Anforderung.", IREB_GLOSSARY),
     "statement": ("Textuelle Formulierung dessen, was gefordert wird.", IREB_GLOSSARY),
     "type": ("Klassifikation der Anforderung, z. B. funktional oder qualitativ.", IREB_GLOSSARY),
-    "status": ("Lebenszyklusstatus der Anforderung bzw. des Elements.", IREB_DOWNLOADS),
+    "status": ("Lebenszyklusstatus der Anforderung: draft = Entwurf, proposed = vorgeschlagen, validated = fachlich geprüft/validiert, approved = genehmigt, implemented = umgesetzt, retired = zurückgezogen bzw. nicht mehr gültig. Der Status beschreibt den aktuellen Zustand einer Anforderung innerhalb ihres Lebenszyklus.", IREB_DOWNLOADS),
     "priority": ("Relative Priorität, mit der eine Anforderung behandelt werden soll.", IREB_DOWNLOADS),
     "source": ("Quelle oder Ursprung der Anforderung.", IREB_DOWNLOADS),
     "rationale": ("Begründung für die Existenz oder Formulierung der Anforderung.", IREB_GLOSSARY),

@@ -68,7 +68,6 @@ class SQLiteStore:
         self._validate_table(table)
         with self._connect() as connection:
             rows = connection.execute(f"SELECT id FROM {table}").fetchall()
-
         numeric_ids = []
         for row in rows:
             match = re.search(r"(\d+)$", row["id"])
@@ -84,6 +83,16 @@ class SQLiteStore:
                 f"INSERT INTO {table} (id, payload) VALUES (?, ?)",
                 (item.id, payload),
             )
+
+    def update(self, table: str, item: ModelT) -> bool:
+        self._validate_table(table)
+        payload = json.dumps(item.model_dump(mode="json"), ensure_ascii=False)
+        with self._connect() as connection:
+            cursor = connection.execute(
+                f"UPDATE {table} SET payload = ? WHERE id = ?",
+                (payload, item.id),
+            )
+        return cursor.rowcount == 1
 
     def _validate_table(self, table: str) -> None:
         if table not in self.TABLES.values():

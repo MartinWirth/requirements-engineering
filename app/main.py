@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from .models import Actor, Requirement, TraceLink, UseCase
+from .ui import model_schema
 
 app = FastAPI(
     title="Requirements Engineering Workbench",
@@ -14,19 +16,18 @@ trace_links: list[TraceLink] = []
 
 
 @app.get("/")
-def root() -> dict[str, str]:
-    return {
-        "name": "Requirements Engineering Workbench",
-        "version": app.version,
-        "status": "ok",
-        "docs": "/docs",
-        "health": "/health",
-    }
+def root():
+    return FileResponse("app/static/index.html", media_type="text/html")
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/schema")
+def get_model_schema():
+    return model_schema()
 
 
 @app.get("/requirements", response_model=list[Requirement])

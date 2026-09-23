@@ -20,35 +20,25 @@
     td input, td select { width: 180px; box-sizing: border-box; padding: 6px; }
     td input.invalid { border: 2px solid #c62828; background: #fff3f3; }
     .new-row td { background: #fffbea; }
+    .edit-row td { background: #f0f9ff; }
     .status { font-size: 12px; min-height: 18px; }
     .status.invalid { color: #b42318; }
     .status.valid { color: #18794e; }
     button { padding: 7px 12px; cursor: pointer; }
-    .save { white-space: nowrap; }
+    button + button { margin-left: 6px; }
+    .action-cell { white-space: nowrap; }
     .empty { padding: 30px; text-align: center; color: #667085; }
-
     .tooltip {
-      position: fixed;
-      z-index: 1000;
-      width: 320px;
-      max-width: calc(100vw - 32px);
-      padding: 12px 14px;
-      border-radius: 7px;
-      background: #111827;
-      color: #fff;
-      box-shadow: 0 5px 18px rgba(0,0,0,.25);
-      font-size: 13px;
-      line-height: 1.4;
-      pointer-events: auto;
+      position: fixed; z-index: 1000; width: 320px; max-width: calc(100vw - 32px);
+      padding: 12px 14px; border-radius: 7px; background: #111827; color: #fff;
+      box-shadow: 0 5px 18px rgba(0,0,0,.25); font-size: 13px; line-height: 1.4; pointer-events: auto;
     }
     .tooltip strong { display: block; margin-bottom: 5px; font-size: 14px; }
     .tooltip a { color: #93c5fd; }
   </style>
 </head>
 <body>
-<header>
-  <strong>Requirements Engineering Workbench</strong>
-</header>
+<header><strong>Requirements Engineering Workbench</strong></header>
 <main>
   <div class="toolbar">
     <label for="typeSelector">Typ:</label>
@@ -97,96 +87,73 @@ function label(name) {
 
 function validate(value, field) {
   const trimmed = value.trim();
-
-  if (!trimmed) {
-    return field.required ? { ok: false, message: "Pflichtfeld" } : { ok: true, value: null };
-  }
+  if (!trimmed) return field.required ? { ok: false, message: "Pflichtfeld" } : { ok: true, value: null };
 
   if (field.kind === "enum") {
-    return field.values.includes(trimmed)
-      ? { ok: true, value: trimmed }
-      : { ok: false, message: "Ungültiger ENUM-Wert" };
+    return field.values.includes(trimmed) ? { ok: true, value: trimmed } : { ok: false, message: "Ungültiger ENUM-Wert" };
   }
-
   if (field.data_type === "int") {
-    return /^[-+]?\d+$/.test(trimmed)
-      ? { ok: true, value: Number.parseInt(trimmed, 10) }
-      : { ok: false, message: "Ganzzahl erwartet" };
+    return /^[-+]?\d+$/.test(trimmed) ? { ok: true, value: Number.parseInt(trimmed, 10) } : { ok: false, message: "Ganzzahl erwartet" };
   }
-
   if (field.data_type === "float") {
     const normalized = trimmed.replace(",", ".");
-    return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(normalized)
-      ? { ok: true, value: Number.parseFloat(normalized) }
-      : { ok: false, message: "Zahl erwartet" };
+    return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(normalized) ? { ok: true, value: Number.parseFloat(normalized) } : { ok: false, message: "Zahl erwartet" };
   }
-
   if (field.data_type === "bool") {
-    return ["true", "false"].includes(trimmed.toLowerCase())
-      ? { ok: true, value: trimmed.toLowerCase() === "true" }
-      : { ok: false, message: "true oder false erwartet" };
+    return ["true", "false"].includes(trimmed.toLowerCase()) ? { ok: true, value: trimmed.toLowerCase() === "true" } : { ok: false, message: "true oder false erwartet" };
   }
-
   if (field.kind === "json") {
     try {
       const parsed = JSON.parse(trimmed);
-      if (field.data_type === "list" && !Array.isArray(parsed))
-        return { ok: false, message: "JSON-Liste erwartet" };
-      if (field.data_type === "dict" && (parsed === null || Array.isArray(parsed) || typeof parsed !== "object"))
-        return { ok: false, message: "JSON-Objekt erwartet" };
+      if (field.data_type === "list" && !Array.isArray(parsed)) return { ok: false, message: "JSON-Liste erwartet" };
+      if (field.data_type === "dict" && (parsed === null || Array.isArray(parsed) || typeof parsed !== "object")) return { ok: false, message: "JSON-Objekt erwartet" };
       return { ok: true, value: parsed };
     } catch {
       return { ok: false, message: "Gültiges JSON erwartet" };
     }
   }
-
   return { ok: true, value: trimmed };
 }
 
-function createEditor(field) {
+function createEditor(field, value = "") {
   if (field.kind === "enum") {
     const select = document.createElement("select");
     const empty = document.createElement("option");
     empty.value = "";
     empty.textContent = "— auswählen —";
     select.appendChild(empty);
-
-    field.values.forEach(value => {
+    field.values.forEach(optionValue => {
       const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
+      option.value = optionValue;
+      option.textContent = optionValue;
       select.appendChild(option);
     });
+    select.value = value ?? "";
     return select;
   }
 
   const input = document.createElement("input");
   input.type = "text";
+  input.value = value === null || value === undefined ? "" : typeof value === "object" ? JSON.stringify(value) : String(value);
   input.placeholder = field.data_type === "list" ? '["Wert 1", "Wert 2"]' :
-                      field.data_type === "dict" ? '{"key": "value"}' :
-                      field.data_type || "";
+                      field.data_type === "dict" ? '{"key": "value"}' : field.data_type || "";
   return input;
 }
 
 function showTooltip(event, field) {
   clearTimeout(tooltipTimer);
   tooltip.replaceChildren();
-
   const title = document.createElement("strong");
   title.textContent = label(field.name);
-
   const summary = document.createElement("div");
   summary.textContent = field.summary;
-
   const link = document.createElement("a");
   link.href = field.documentation_url;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.textContent = "IREB-Dokumentation öffnen";
-
   tooltip.append(title, summary, document.createElement("br"), link);
   tooltip.hidden = false;
-
   const x = Math.min(event.clientX + 12, window.innerWidth - tooltip.offsetWidth - 12);
   const y = Math.min(event.clientY + 14, window.innerHeight - tooltip.offsetHeight - 12);
   tooltip.style.left = Math.max(8, x) + "px";
@@ -209,12 +176,10 @@ tooltip.addEventListener("mouseleave", scheduleHideTooltip);
 function addHeaderTooltip(th, field) {
   th.className = "help-header";
   th.title = field.summary;
-
   const text = document.createElement("span");
   text.className = "header-label";
   text.textContent = label(field.name);
   th.appendChild(text);
-
   th.addEventListener("mouseenter", event => showTooltip(event, field));
   th.addEventListener("mousemove", event => {
     if (!tooltip.hidden) {
@@ -234,26 +199,144 @@ async function loadTable() {
     showError("Liste konnte nicht geladen werden.");
     return;
   }
-
   const rows = await response.json();
   renderTable(definition, rows);
 }
 
+function addValidation(editor, field, td) {
+  const status = document.createElement("div");
+  status.className = "status";
+  td.appendChild(editor);
+  td.appendChild(status);
+
+  const check = () => {
+    const result = validate(editor.value, field);
+    editor.classList.toggle("invalid", !result.ok);
+    status.className = "status " + (result.ok ? "valid" : "invalid");
+    status.textContent = result.ok ? "" : result.message;
+    return result;
+  };
+  editor.addEventListener("input", check);
+  editor.addEventListener("change", check);
+  return check;
+}
+
+async function saveObject(definition, editors, button, successMessage) {
+  const payload = {};
+  let valid = true;
+
+  editors.forEach(({ field, editor, check }) => {
+    if (field.name === "id") return;
+    const result = check();
+    if (!result.ok) valid = false;
+    else if (result.value !== null && result.value !== undefined) payload[field.name] = result.value;
+  });
+
+  if (!valid) {
+    showError("Bitte korrigiere die markierten Werte.");
+    return false;
+  }
+
+  button.disabled = true;
+  try {
+    const response = await fetch(button.dataset.url, {
+      method: button.dataset.method || "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.detail || "Eintrag konnte nicht gespeichert werden.");
+    }
+    showMessage(successMessage);
+    await loadTable();
+    return true;
+  } catch (error) {
+    showError(error.message);
+    button.disabled = false;
+    return false;
+  }
+}
+
+function createEditRow(definition, row, originalRow) {
+  const tr = document.createElement("tr");
+  tr.className = "edit-row";
+  const editors = [];
+
+  definition.fields.forEach(field => {
+    const td = document.createElement("td");
+    const editor = createEditor(field, row[field.name]);
+    if (field.name === "id") editor.disabled = true;
+    const check = addValidation(editor, field, td);
+    editors.push({ field, editor, check });
+    tr.appendChild(td);
+  });
+
+  const actionTd = document.createElement("td");
+  actionTd.className = "action-cell";
+
+  const save = document.createElement("button");
+  save.textContent = "Save";
+  save.dataset.url = definition.endpoint + "/" + encodeURIComponent(row.id);
+  save.dataset.method = "PUT";
+
+  const cancel = document.createElement("button");
+  cancel.textContent = "Cancel";
+  cancel.addEventListener("click", () => {
+    renderTable(definition, originalRow ? [...originalRow] : []);
+  });
+
+  save.addEventListener("click", async () => {
+    const payload = { id: row.id };
+    let valid = true;
+    editors.forEach(({ field, editor, check }) => {
+      const result = check();
+      if (!result.ok) valid = false;
+      else if (field.name !== "id" && result.value !== null && result.value !== undefined) payload[field.name] = result.value;
+    });
+    if (!valid) {
+      showError("Bitte korrigiere die markierten Werte.");
+      return;
+    }
+
+    save.disabled = true;
+    try {
+      const response = await fetch(save.dataset.url, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || "Eintrag konnte nicht geändert werden.");
+      }
+      showMessage("Eintrag erfolgreich geändert.");
+      await loadTable();
+    } catch (error) {
+      showError(error.message);
+      save.disabled = false;
+    }
+  });
+
+  actionTd.append(save, cancel);
+  tr.appendChild(actionTd);
+  return tr;
+}
+
 function renderTable(definition, rows) {
   tableContainer.replaceChildren();
-
   const table = document.createElement("table");
   const header = document.createElement("tr");
+
+  const actionTh = document.createElement("th");
+  actionTh.textContent = "action";
+  header.appendChild(actionTh);
 
   definition.fields.forEach(field => {
     const th = document.createElement("th");
     addHeaderTooltip(th, field);
     header.appendChild(th);
   });
-
-  const actionTh = document.createElement("th");
-  actionTh.textContent = "Aktion";
-  header.appendChild(actionTh);
 
   const thead = document.createElement("thead");
   thead.appendChild(header);
@@ -263,15 +346,24 @@ function renderTable(definition, rows) {
 
   rows.forEach(row => {
     const tr = document.createElement("tr");
+    const actionTd = document.createElement("td");
+    actionTd.className = "action-cell";
+    const modify = document.createElement("button");
+    modify.textContent = "Modify";
+    modify.addEventListener("click", () => {
+      const snapshot = rows.map(item => ({...item}));
+      const editRow = createEditRow(definition, row, snapshot);
+      tr.replaceWith(editRow);
+    });
+    actionTd.appendChild(modify);
+    tr.appendChild(actionTd);
+
     definition.fields.forEach(field => {
       const td = document.createElement("td");
       const value = row[field.name];
       td.textContent = typeof value === "object" ? JSON.stringify(value) : (value ?? "");
       tr.appendChild(td);
     });
-    const td = document.createElement("td");
-    td.textContent = "—";
-    tr.appendChild(td);
     tbody.appendChild(tr);
   });
 
@@ -282,74 +374,27 @@ function renderTable(definition, rows) {
   definition.fields.forEach(field => {
     const td = document.createElement("td");
     const editor = createEditor(field);
-
     if (field.name === "id") {
       editor.placeholder = "wird automatisch vergeben";
       editor.disabled = true;
     }
-
-    const status = document.createElement("div");
-    status.className = "status";
-    td.appendChild(editor);
-    td.appendChild(status);
-    newRow.appendChild(td);
-
-    const check = () => {
-      const result = validate(editor.value, field);
-      editor.classList.toggle("invalid", !result.ok);
-      status.className = "status " + (result.ok ? "valid" : "invalid");
-      status.textContent = result.ok ? "" : result.message;
-      return result;
-    };
-
-    editor.addEventListener("input", check);
-    editor.addEventListener("change", check);
+    const check = addValidation(editor, field, td);
     editors.push({ field, editor, check });
+    newRow.appendChild(td);
   });
 
   const actionTd = document.createElement("td");
-  const save = document.createElement("button");
-  save.className = "save";
-  save.textContent = "Neu anlegen";
-  save.addEventListener("click", async () => {
-    const payload = {};
-    let valid = true;
-
-    editors.forEach(({ field, editor, check }) => {
-      if (field.name === "id") return;
-      const result = check();
-      if (!result.ok) valid = false;
-      else if (result.value !== null && result.value !== undefined) payload[field.name] = result.value;
-    });
-
-    if (!valid) {
-      showError("Bitte korrigiere die markierten Werte.");
-      return;
-    }
-
-    save.disabled = true;
-    try {
-      const response = await fetch(definition.endpoint, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        const detail = await response.json().catch(() => ({}));
-        throw new Error(detail.detail || "Eintrag konnte nicht gespeichert werden.");
-      }
-
-      showMessage("Eintrag erfolgreich angelegt.");
-      await loadTable();
-    } catch (error) {
-      showError(error.message);
-      save.disabled = false;
-    }
+  actionTd.className = "action-cell";
+  const create = document.createElement("button");
+  create.textContent = "Create";
+  create.dataset.url = definition.endpoint;
+  create.dataset.method = "POST";
+  create.addEventListener("click", async () => {
+    await saveObject(definition, editors, create, "Eintrag erfolgreich angelegt.");
   });
+  actionTd.appendChild(create);
 
-  actionTd.appendChild(save);
-  newRow.appendChild(actionTd);
+  newRow.insertBefore(actionTd, newRow.firstChild);
   tbody.appendChild(newRow);
   table.appendChild(tbody);
   tableContainer.appendChild(table);

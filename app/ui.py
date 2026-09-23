@@ -12,6 +12,7 @@ IREB_DOWNLOADS = "https://cpre.ireb.org/en/downloads-and-resources/downloads"
 IREB_MODELING = "https://cpre.ireb.org/en/concept/requirements-modeling"
 
 FIELD_HELP: dict[str, tuple[str, str]] = {
+    "action": ("Aktion zur Bearbeitung des Elements. Modify öffnet die Zeile zur Änderung; Create legt ein neues Element an. Dies ist eine Workbench-Funktion und kein eigenes IREB-Modellelement.", IREB_GLOSSARY),
     "id": ("Eindeutige Kennung des Elements innerhalb des Modells.", IREB_GLOSSARY),
     "title": ("Kurzer, prägnanter Titel zur Identifikation der Anforderung.", IREB_GLOSSARY),
     "statement": ("Textuelle Formulierung dessen, was gefordert wird.", IREB_GLOSSARY),

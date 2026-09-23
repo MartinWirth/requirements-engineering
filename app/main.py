@@ -36,6 +36,8 @@ def list_requirements():
 
 @app.post("/requirements", response_model=Requirement, status_code=201)
 def create_requirement(item: Requirement):
+    if not item.id:
+        item.id = f"REQ-{Requirement.nextID(requirements.values()):03d}"
     if item.id in requirements:
         raise HTTPException(409, "Requirement ID already exists")
     requirements[item.id] = item
@@ -56,6 +58,8 @@ def list_use_cases():
 
 @app.post("/use-cases", response_model=UseCase, status_code=201)
 def create_use_case(item: UseCase):
+    if not item.id:
+        item.id = f"UC-{UseCase.nextID(use_cases.values()):03d}"
     if item.id in use_cases:
         raise HTTPException(409, "Use-case ID already exists")
     use_cases[item.id] = item
@@ -76,6 +80,8 @@ def list_actors():
 
 @app.post("/actors", response_model=Actor, status_code=201)
 def create_actor(item: Actor):
+    if not item.id:
+        item.id = f"ACT-{Actor.nextID(actors.values()):03d}"
     if item.id in actors:
         raise HTTPException(409, "Actor ID already exists")
     actors[item.id] = item
@@ -89,5 +95,9 @@ def list_traceability():
 
 @app.post("/traceability", response_model=TraceLink, status_code=201)
 def create_trace_link(item: TraceLink):
+    if not item.id:
+        item.id = f"TRACE-{TraceLink.nextID(trace_links):03d}"
+    if any(existing.id == item.id for existing in trace_links):
+        raise HTTPException(409, "Trace link ID already exists")
     trace_links.append(item)
     return item

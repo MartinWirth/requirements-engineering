@@ -330,7 +330,11 @@ function renderTable(definition, rows) {
   const header = document.createElement("tr");
 
   const actionTh = document.createElement("th");
-  actionTh.textContent = "action";
+  addHeaderTooltip(actionTh, {
+    name: "action",
+    summary: "Aktion zur Bearbeitung des Elements: Modify öffnet die Zeile zur Änderung; Create legt ein neues Element an. Dies ist eine Workbench-Funktion und kein eigenes IREB-Modellelement.",
+    documentation_url: "https://cpre.ireb.org/en/downloads-and-resources/glossary"
+  });
   header.appendChild(actionTh);
 
   definition.fields.forEach(field => {

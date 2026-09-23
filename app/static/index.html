@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Requirements Engineering Workbench</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #1f2937; background: #f5f7fa; }
+    body { margin: 0; }
+    header { background: #1f2937; color: white; padding: 18px 28px; }
+    main { padding: 24px 28px; overflow-x: auto; }
+    .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 18px; }
+    select, input { font: inherit; }
+    #typeSelector { min-width: 220px; padding: 8px 10px; }
+    table { border-collapse: collapse; width: max-content; min-width: 100%; background: white; }
+    th, td { border: 1px solid #d8dee6; padding: 8px; vertical-align: top; }
+    th { background: #eef2f7; text-align: left; position: sticky; top: 0; }
+    td input, td select { width: 180px; box-sizing: border-box; padding: 6px; }
+    td input.invalid { border: 2px solid #c62828; background: #fff3f3; }
+    .new-row td { background: #fffbea; }
+    .status { font-size: 12px; min-height: 18px; }
+    .status.invalid { color: #b42318; }
+    .status.valid { color: #18794e; }
+    button { padding: 7px 12px; cursor: pointer; }
+    .save { white-space: nowrap; }
+    .empty { padding: 30px; text-align: center; color: #667085; }
+  </style>
+</head>
+<body>
+<header>
+  <strong>Requirements Engineering Workbench</strong>
+</header>
+<main>
+  <div class="toolbar">
+    <label for="typeSelector">Typ:</label>
+    <select id="typeSelector"></select>
+    <span id="message"></span>
+  </div>
+  <div id="tableContainer"></div>
+</main>
+
+<script>
+let schema = {};
+let selectedType = "Requirements";
+
+const selector = document.getElementById("typeSelector");
+const tableContainer = document.getElementById("tableContainer");
+const message = document.getElementById("message");
+
+async function init() {
+  const response = await fetch("/api/schema");
+  if (!response.ok) throw new Error("Modelldefinition konnte nicht geladen werden.");
+  schema = await response.json();
+
+  Object.keys(schema).forEach(name => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    selector.appendChild(option);
+  });
+
+  selector.value = selectedType;
+  selector.addEventListener("change", () => {
+    selectedType = selector.value;
+    loadTable();
+  });
+
+  await loadTable();
+}
+
+function label(name) {
+  return name.replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function validate(value, field) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return field.required ? { ok: false, message: "Pflichtfeld" } : { ok: true, value: null };
+  }
+
+  if (field.kind === "enum") {
+    return field.values.includes(trimmed)
+      ? { ok: true, value: trimmed }
+      : { ok: false, message: "Ungültiger ENUM-Wert" };
+  }
+
+  if (field.data_type === "int") {
+    return /^[-+]?\d+$/.test(trimmed)
+      ? { ok: true, value: Number.parseInt(trimmed, 10) }
+      : { ok: false, message: "Ganzzahl erwartet" };
+  }
+
+  if (field.data_type === "float") {
+    const normalized = trimmed.replace(",", ".");
+    return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(normalized)
+      ? { ok: true, value: Number.parseFloat(normalized) }
+      : { ok: false, message: "Zahl erwartet" };
+  }
+
+  if (field.data_type === "bool") {
+    return ["true", "false"].includes(trimmed.toLowerCase())
+      ? { ok: true, value: trimmed.toLowerCase() === "true" }
+      : { ok: false, message: "true oder false erwartet" };
+  }
+
+  if (field.kind === "json") {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (field.data_type === "list" && !Array.isArray(parsed))
+        return { ok: false, message: "JSON-Liste erwartet" };
+      if (field.data_type === "dict" && (parsed === null || Array.isArray(parsed) || typeof parsed !== "object"))
+        return { ok: false, message: "JSON-Objekt erwartet" };
+      return { ok: true, value: parsed };
+    } catch {
+      return { ok: false, message: "Gültiges JSON erwartet" };
+    }
+  }
+
+  return { ok: true, value: trimmed };
+}
+
+function createEditor(field) {
+  if (field.kind === "enum") {
+    const select = document.createElement("select");
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = "— auswählen —";
+    select.appendChild(empty);
+
+    field.values.forEach(value => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
+    });
+    return select;
+  }
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = field.data_type === "list" ? '["Wert 1", "Wert 2"]' :
+                      field.data_type === "dict" ? '{"key": "value"}' :
+                      field.data_type || "";
+  return input;
+}
+
+async function loadTable() {
+  const definition = schema[selectedType];
+  const response = await fetch(definition.endpoint);
+  if (!response.ok) {
+    showError("Liste konnte nicht geladen werden.");
+    return;
+  }
+
+  const rows = await response.json();
+  renderTable(definition, rows);
+}
+
+function renderTable(definition, rows) {
+  tableContainer.replaceChildren();
+
+  const table = document.createElement("table");
+  const header = document.createElement("tr");
+
+  definition.fields.forEach(field => {
+    const th = document.createElement("th");
+    th.textContent = label(field.name);
+    header.appendChild(th);
+  });
+
+  const actionTh = document.createElement("th");
+  actionTh.textContent = "Aktion";
+  header.appendChild(actionTh);
+
+  const thead = document.createElement("thead");
+  thead.appendChild(header);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    definition.fields.forEach(field => {
+      const td = document.createElement("td");
+      const value = row[field.name];
+      td.textContent = typeof value === "object" ? JSON.stringify(value) : (value ?? "");
+      tr.appendChild(td);
+    });
+    const td = document.createElement("td");
+    td.textContent = "—";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  });
+
+  const newRow = document.createElement("tr");
+  newRow.className = "new-row";
+  const editors = [];
+
+  definition.fields.forEach(field => {
+    const td = document.createElement("td");
+    const editor = createEditor(field);
+
+    if (field.name === "id") {
+      editor.placeholder = "wird automatisch vergeben";
+      editor.disabled = true;
+    }
+
+    const status = document.createElement("div");
+    status.className = "status";
+    td.appendChild(editor);
+    td.appendChild(status);
+    newRow.appendChild(td);
+
+    const check = () => {
+      const result = validate(editor.value, field);
+      editor.classList.toggle("invalid", !result.ok);
+      status.className = "status " + (result.ok ? "valid" : "invalid");
+      status.textContent = result.ok ? "" : result.message;
+      return result;
+    };
+
+    editor.addEventListener("input", check);
+    editor.addEventListener("change", check);
+    editors.push({ field, editor, check });
+  });
+
+  const actionTd = document.createElement("td");
+  const save = document.createElement("button");
+  save.className = "save";
+  save.textContent = "Neu anlegen";
+  save.addEventListener("click", async () => {
+    const payload = {};
+    let valid = true;
+
+    editors.forEach(({ field, editor, check }) => {
+      if (field.name === "id") return;
+      const result = check();
+      if (!result.ok) valid = false;
+      else if (result.value !== null && result.value !== undefined) payload[field.name] = result.value;
+    });
+
+    if (!valid) {
+      showError("Bitte korrigiere die markierten Werte.");
+      return;
+    }
+
+    save.disabled = true;
+    try {
+      const response = await fetch(definition.endpoint, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || "Eintrag konnte nicht gespeichert werden.");
+      }
+
+      showMessage("Eintrag erfolgreich angelegt.");
+      await loadTable();
+    } catch (error) {
+      showError(error.message);
+      save.disabled = false;
+    }
+  });
+
+  actionTd.appendChild(save);
+  newRow.appendChild(actionTd);
+  tbody.appendChild(newRow);
+  table.appendChild(tbody);
+  tableContainer.appendChild(table);
+}
+
+function showMessage(text) {
+  message.textContent = text;
+  message.style.color = "#18794e";
+}
+
+function showError(text) {
+  message.textContent = text;
+  message.style.color = "#b42318";
+}
+
+init().catch(error => showError(error.message));
+</script>
+</body>
+</html>

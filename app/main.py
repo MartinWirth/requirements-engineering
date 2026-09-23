@@ -53,6 +53,15 @@ def create_requirement(item: Requirement):
     return item
 
 
+@app.put("/requirements/{requirement_id}", response_model=Requirement)
+def update_requirement(requirement_id: str, item: Requirement):
+    if requirement_id != item.id:
+        raise HTTPException(400, "Requirement ID cannot be changed")
+    if not store.update("requirements", item):
+        raise HTTPException(404, "Requirement not found")
+    return item
+
+
 @app.get("/requirements/{requirement_id}", response_model=Requirement)
 def get_requirement(requirement_id: str):
     item = store.get("requirements", Requirement, requirement_id)
@@ -74,6 +83,15 @@ def create_use_case(item: UseCase):
         store.insert("use_cases", item)
     except sqlite3.IntegrityError:
         raise HTTPException(409, "Use-case ID already exists")
+    return item
+
+
+@app.put("/use-cases/{use_case_id}", response_model=UseCase)
+def update_use_case(use_case_id: str, item: UseCase):
+    if use_case_id != item.id:
+        raise HTTPException(400, "Use-case ID cannot be changed")
+    if not store.update("use_cases", item):
+        raise HTTPException(404, "Use case not found")
     return item
 
 
@@ -101,6 +119,15 @@ def create_actor(item: Actor):
     return item
 
 
+@app.put("/actors/{actor_id}", response_model=Actor)
+def update_actor(actor_id: str, item: Actor):
+    if actor_id != item.id:
+        raise HTTPException(400, "Actor ID cannot be changed")
+    if not store.update("actors", item):
+        raise HTTPException(404, "Actor not found")
+    return item
+
+
 @app.get("/traceability", response_model=list[TraceLink])
 def list_traceability():
     return store.list("trace_links", TraceLink)
@@ -114,4 +141,13 @@ def create_trace_link(item: TraceLink):
         store.insert("trace_links", item)
     except sqlite3.IntegrityError:
         raise HTTPException(409, "Trace link ID already exists")
+    return item
+
+
+@app.put("/traceability/{trace_link_id}", response_model=TraceLink)
+def update_trace_link(trace_link_id: str, item: TraceLink):
+    if trace_link_id != item.id:
+        raise HTTPException(400, "Trace link ID cannot be changed")
+    if not store.update("trace_links", item):
+        raise HTTPException(404, "Trace link not found")
     return item

@@ -54,7 +54,7 @@ class UseCaseFlow(_NextIDModel):
 
 
 class UseCase(_NextIDModel):
-    id: str
+    id: str = ""
     name: str
     goal: str = ""
     description: str = ""
@@ -75,7 +75,7 @@ class UseCase(_NextIDModel):
 
 
 class Requirement(_NextIDModel):
-    id: str
+    id: str = ""
     title: str
     statement: str
     type: RequirementType
@@ -90,7 +90,7 @@ class Requirement(_NextIDModel):
 
 
 class Actor(_NextIDModel):
-    id: str
+    id: str = ""
     name: str
     description: str = ""
     kind: str = "person"

@@ -74,3 +74,15 @@ def test_next_id_uses_numeric_suffix():
     ]
 
     assert Actor.nextID(actors) == 10
+
+
+def test_main_models_can_be_created_without_an_id():
+    assert Requirement(
+        title="Login",
+        statement="The system shall authenticate users.",
+        type=RequirementType.FUNCTIONAL,
+    ).id == ""
+
+    assert UseCase(name="Authenticate user").id == ""
+    assert Actor(name="User").id == ""
+    assert TraceLink(source_id="REQ-001", target_id="UC-001", relation="satisfies").id == ""

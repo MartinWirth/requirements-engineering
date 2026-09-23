@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Any, get_args, get_origin, get_type_hints
 
-from .models import Actor, Requirement, TraceLink, UseCase, UseCaseFlow
+from pydantic import BaseModel
+
+from .models import Actor, Requirement, TraceLink, UseCase
 
 
 MODEL_DEFINITIONS = {
@@ -66,10 +68,14 @@ def model_schema() -> dict[str, Any]:
 
         for name, field in model.model_fields.items():
             schema = _field_schema(hints[name])
+            default = field.default
+            if isinstance(default, Enum):
+                default = default.value
+
             schema.update({
                 "name": name,
                 "required": field.is_required(),
-                "default": None if field.default is None else field.default,
+                "default": None if default is None else default,
             })
             fields.append(schema)
 

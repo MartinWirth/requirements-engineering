@@ -1,7 +1,33 @@
 from __future__ import annotations
 
+import re
 from enum import Enum
+from typing import Iterable, Self
+
 from pydantic import BaseModel, Field
+
+
+class _NextIDModel(BaseModel):
+    @classmethod
+    def nextID(cls, instances: Iterable[Self]) -> int:
+        """Return the next numeric ID for instances of this model.
+
+        Returns 1 when there are no instances with a numeric ID; otherwise
+        returns max(id) + 1. IDs such as "REQ-001" are supported by using
+        their trailing numeric part.
+        """
+        ids: list[int] = []
+
+        for instance in instances:
+            value = getattr(instance, "id", None)
+            if value is None:
+                continue
+
+            match = re.search(r"(\d+)$", str(value))
+            if match:
+                ids.append(int(match.group(1)))
+
+        return max(ids, default=0) + 1
 
 
 class RequirementType(str, Enum):
@@ -21,12 +47,13 @@ class RequirementStatus(str, Enum):
     RETIRED = "retired"
 
 
-class UseCaseFlow(BaseModel):
+class UseCaseFlow(_NextIDModel):
+    id: str = ""
     name: str
     steps: list[str] = Field(default_factory=list)
 
 
-class UseCase(BaseModel):
+class UseCase(_NextIDModel):
     id: str
     name: str
     goal: str = ""
@@ -47,7 +74,7 @@ class UseCase(BaseModel):
     status: RequirementStatus = RequirementStatus.DRAFT
 
 
-class Requirement(BaseModel):
+class Requirement(_NextIDModel):
     id: str
     title: str
     statement: str
@@ -62,7 +89,7 @@ class Requirement(BaseModel):
     conflicts_with: list[str] = Field(default_factory=list)
 
 
-class Actor(BaseModel):
+class Actor(_NextIDModel):
     id: str
     name: str
     description: str = ""
@@ -70,7 +97,8 @@ class Actor(BaseModel):
     parent_actor: str | None = None
 
 
-class TraceLink(BaseModel):
+class TraceLink(_NextIDModel):
+    id: str = ""
     source_id: str
     target_id: str
     relation: str

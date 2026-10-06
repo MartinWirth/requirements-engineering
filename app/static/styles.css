@@ -1,5 +1,6 @@
 :root{font-family:system-ui,sans-serif;color:#1f2937;background:#f5f7fa}
 *{box-sizing:border-box}body{margin:0}header{height:58px;background:#1f2937;color:#fff;padding:17px 24px;display:flex;justify-content:space-between}
+#tooltipMode{background:#fff;color:#1f2937;border:1px solid #fff;border-radius:4px;padding:5px 8px;font:inherit;margin-left:12px}
 #message{font-size:13px}.success{color:#a7f3d0}.error{color:#fecaca}
 .layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 58px)}
 #navigation{background:#fff;border-right:1px solid #d8dee6;padding:18px 12px}.nav-title{font-size:11px;text-transform:uppercase;color:#667085;padding:0 10px 8px;letter-spacing:.08em}

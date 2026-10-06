@@ -1,18 +1,19 @@
-let schema={},selectedType="Requirements",rows=[],tooltipTimer=null;
+let schema={},selectedType="Requirements",rows=[],tooltipTimer=null,tooltipMode="short";
 const $=id=>document.getElementById(id),container=$("tableContainer"),message=$("message"),tooltip=$("tooltip"),filter=$("filter");
 const label=name=>name.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
 const definition=()=>schema[selectedType];
 
 async function init(){
   const response=await fetch("/api/schema");
-  if(!response.ok) throw Error("Model schema could not be loaded.");
+  if(!response.ok)throw Error("Model schema could not be loaded.");
   schema=await response.json();
   document.querySelectorAll("#navigation button").forEach(button=>{
     button.onclick=()=>{selectedType=button.dataset.type;filter.value="";setActiveNav();loadTable()};
   });
   filter.oninput=()=>renderTable();
+  $("tooltipMode").onchange=e=>{tooltipMode=e.target.value;hideTooltip()};
   $("newButton").onclick=()=>renderCreate();
-  setActiveNav(); await loadTable();
+  setActiveNav();await loadTable();
 }
 function setActiveNav(){
   document.querySelectorAll("#navigation button").forEach(b=>b.classList.toggle("active",b.dataset.type===selectedType));
@@ -27,7 +28,7 @@ function validate(value,field){
   if(!v)return field.required?{ok:false,message:"Required"}:{ok:true,value:null};
   if(field.kind==="enum")return field.values.includes(v)?{ok:true,value:v}:{ok:false,message:"Invalid value"};
   if(field.data_type==="int")return /^[-+]?\d+$/.test(v)?{ok:true,value:Number(v)}:{ok:false,message:"Integer expected"};
-  if(field.data_type==="float"){const n=v.replace(",",".");return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(n)?{ok:true,value:Number(n)}:{ok:false,message:"Number expected"}}
+  if(field.data_type==="float"){const n=v.replace(",","." );return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(n)?{ok:true,value:Number(n)}:{ok:false,message:"Number expected"}}
   if(field.data_type==="bool")return ["true","false"].includes(v.toLowerCase())?{ok:true,value:v.toLowerCase()==="true"}:{ok:false,message:"true or false expected"};
   if(field.kind==="json")try{const value=JSON.parse(v);if(field.data_type==="list"&&!Array.isArray(value))return{ok:false,message:"JSON list expected"};if(field.data_type==="dict"&&(value===null||Array.isArray(value)||typeof value!=="object"))return{ok:false,message:"JSON object expected"};return{ok:true,value}}catch{return{ok:false,message:"Valid JSON expected"}}
   return{ok:true,value:v};
@@ -36,13 +37,31 @@ function createEditor(field,value=""){
   if(field.kind==="enum"){const el=document.createElement("select");el.add(new Option("— select —",""));field.values.forEach(v=>el.add(new Option(v,v)));el.value=value??"";return el}
   const el=document.createElement("textarea");el.value=value==null?"":typeof value==="object"?JSON.stringify(value):String(value);
   el.rows=field.data_type==="list"||field.data_type==="dict"||String(field.name).includes("description")||String(field.name).includes("statement")?3:1;
-  el.placeholder=field.data_type==="list"?'["value 1", "value 2"]':field.data_type==="dict"?'{"key":"value"}':field.data_type||"";
+  el.placeholder=field.data_type==="list"?'["value 1", "value 2"]':field.data_type==="dict"?'{ "key": "value" }':field.data_type||"";
   return el;
 }
 function addHeaderTooltip(th,field){
   th.className="help-header";th.title=field.summary;
   const text=document.createElement("span");text.className="header-label";text.textContent=label(field.name);th.append(text);
   th.onmouseenter=e=>showTooltip(e,field);th.onmousemove=moveTooltip;th.onmouseleave=scheduleHide;
+}
+function actionTooltip(event,action,def,row){
+  clearTimeout(tooltipTimer);tooltip.replaceChildren();
+  const title=document.createElement("strong");title.textContent=action+" "+selectedType.replace(/s$/,"");tooltip.append(title);
+  if(tooltipMode==="short"){
+    const text=document.createElement("div");text.textContent="Edit this "+selectedType.toLowerCase().replace(/s$/,"")+".";tooltip.append(text);
+    const link=document.createElement("a");link.href="https://cpre.ireb.org/en/downloads-and-resources/glossary";link.target="_blank";link.rel="noopener noreferrer";link.textContent="Open IREB documentation";tooltip.append(document.createElement("br"),link);
+  }else if(tooltipMode==="api"){
+    const code=document.createElement("code");code.textContent=action==="Modify"?"PUT "+def.endpoint+"/"+row.id:"POST "+def.endpoint;tooltip.append(code);
+  }else{
+    const desc=document.createElement("div");desc.textContent=action+" "+selectedType.toLowerCase().replace(/s$/,"")+". The action operates on the complete model element and preserves its relationships.";tooltip.append(desc);
+    const deps=def.fields.filter(f=>/(related|depends|conflicts|includes|extends|generalizes|actor|parent|source_id|target_id)/i.test(f.name));
+    if(deps.length){
+      const heading=document.createElement("div");heading.innerHTML="<strong>Dependencies</strong>";tooltip.append(heading);
+      deps.forEach(f=>{const v=row?.[f.name];if(v==null||v===""||(Array.isArray(v)&&!v.length))return;const d=document.createElement("div");d.textContent=label(f.name)+": "+(typeof v==="object"?JSON.stringify(v):v);tooltip.append(d)});
+    }
+  }
+  tooltip.hidden=false;moveTooltip(event);
 }
 function showTooltip(event,field){
   clearTimeout(tooltipTimer);tooltip.replaceChildren();
@@ -84,18 +103,24 @@ async function saveRow(def,row,editors,isNew,saveButton){
     showMessage(isNew?"Element created.":"Element updated.");await loadTable();
   }catch(error){showError(error.message);saveButton.disabled=false}
 }
-function renderCreate(){container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});table.append(Object.assign(document.createElement("thead"),{innerHTML:""}));table.tHead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));container.append(table)}
+function renderCreate(){
+  container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");
+  th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});
+  const thead=table.createTHead();thead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));container.append(table);
+}
 function renderTable(){
   container.replaceChildren();const def=definition(),table=document.createElement("table"),thead=table.createTHead(),head=thead.insertRow(),actionTh=document.createElement("th");
   actionTh.textContent="Action";head.append(actionTh);def.fields.forEach(field=>{const th=document.createElement("th");addHeaderTooltip(th,field);head.append(th)});
   const body=table.createTBody(),visible=visibleRows();
   visible.forEach(row=>{
     const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");
-    modify.onclick=()=>tr.replaceWith(editorRow(def,row));action.append(modify);
+    modify.onclick=()=>tr.replaceWith(editorRow(def,row));
+    modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;
+    action.append(modify);
     def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});
     tr.ondblclick=()=>tr.replaceWith(editorRow(def,row));
   });
-  if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."; }
+  if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."}
   container.append(table);
 }
 async function loadTable(){

@@ -6,7 +6,14 @@
 <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-<header><strong>Requirements Engineering Workbench</strong><span id="message"></span></header>
+<header><strong>Requirements Engineering Workbench</strong>
+  <select id="tooltipMode" title="Tooltip type">
+    <option value="short">Short + IREB</option>
+    <option value="api">API call</option>
+    <option value="full">Full + dependencies</option>
+  </select>
+  <span id="message"></span>
+</header>
 <div class="layout">
 <nav id="navigation">
   <div class="nav-title">Model</div>
@@ -20,11 +27,6 @@
   <div class="toolbar">
     <h1 id="pageTitle">Requirements</h1>
     <input id="filter" placeholder="Filter…" autocomplete="off">
-    <select id="tooltipMode" title="Tooltip type">
-      <option value="short">Short + IREB</option>
-      <option value="api">API call</option>
-      <option value="full">Full + dependencies</option>
-    </select>
     <button id="newButton">New</button>
   </div>
   <div id="tableContainer"></div>

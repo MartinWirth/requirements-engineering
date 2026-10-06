@@ -10,23 +10,14 @@ from pydantic import BaseModel, Field
 class _NextIDModel(BaseModel):
     @classmethod
     def nextID(cls, instances: Iterable[Self]) -> int:
-        """Return the next numeric ID for instances of this model.
-
-        Returns 1 when there are no instances with a numeric ID; otherwise
-        returns max(id) + 1. IDs such as "REQ-001" are supported by using
-        their trailing numeric part.
-        """
         ids: list[int] = []
-
         for instance in instances:
             value = getattr(instance, "id", None)
             if value is None:
                 continue
-
             match = re.search(r"(\d+)$", str(value))
             if match:
                 ids.append(int(match.group(1)))
-
         return max(ids, default=0) + 1
 
 
@@ -70,6 +61,20 @@ class UseCase(_NextIDModel):
     generalizes: list[str] = Field(default_factory=list)
     related_requirements: list[str] = Field(default_factory=list)
     acceptance_criteria: list[str] = Field(default_factory=list)
+    priority: str = "medium"
+    status: RequirementStatus = RequirementStatus.DRAFT
+
+
+class UserStory(_NextIDModel):
+    id: str = ""
+    title: str
+    as_a: str = ""
+    i_want: str = ""
+    so_that: str = ""
+    acceptance_criteria: list[str] = Field(default_factory=list)
+    actor: str | None = None
+    related_requirements: list[str] = Field(default_factory=list)
+    related_use_cases: list[str] = Field(default_factory=list)
     priority: str = "medium"
     status: RequirementStatus = RequirementStatus.DRAFT
 

@@ -1,1 +1,31 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Requirements Engineering Workbench</title><link rel="stylesheet" href="/static/styles.css"></head><body><header><strong>Requirements Engineering Workbench</strong></header><main><div class="toolbar"><label for="typeSelector">Typ:</label><select id="typeSelector"></select><span id="message"></span></div><div id="tableContainer"></div></main><div id="tooltip" class="tooltip" hidden></div><script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Requirements Engineering Workbench</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header><strong>Requirements Engineering Workbench</strong><span id="message"></span></header>
+<div class="layout">
+<nav id="navigation">
+  <div class="nav-title">Model</div>
+  <button data-type="Requirements">Requirements</button>
+  <button data-type="User Stories">User Stories</button>
+  <button data-type="Use Cases">Use Cases</button>
+  <button data-type="Actors">Actors</button>
+  <button data-type="Traceability">Traceability</button>
+</nav>
+<main>
+  <div class="toolbar">
+    <h1 id="pageTitle">Requirements</h1>
+    <input id="filter" placeholder="Filter…" autocomplete="off">
+    <button id="newButton">New</button>
+  </div>
+  <div id="tableContainer"></div>
+</main>
+</div>
+<div id="tooltip" class="tooltip" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

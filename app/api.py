@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-
 import sqlite3
-from typing import Any
+from typing import Any, Callable
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -19,41 +18,51 @@ class Resource:
 
 def create_router(store: SQLiteStore, resources: list[Resource]) -> APIRouter:
     router = APIRouter()
-
     for resource in resources:
         _register(router, store, resource)
-
     return router
 
 
 def _register(router: APIRouter, store: SQLiteStore, resource: Resource) -> None:
     model = resource.model
+    router.add_api_route(resource.path, _list(store, resource), methods=["GET"], response_model=list[model])
+    router.add_api_route(resource.path, _create(store, resource), methods=["POST"], response_model=model, status_code=201)
+    router.add_api_route(f"{resource.path}/{{item_id}}", _get(store, resource), methods=["GET"], response_model=model)
+    router.add_api_route(f"{resource.path}/{{item_id}}", _update(store, resource), methods=["PUT"], response_model=model)
 
-    @router.get(resource.path, response_model=list[model])
-    def list_items(r: Resource = resource) -> list[Any]:
-        return store.list(r.table, r.model)
 
-    @router.post(resource.path, response_model=model, status_code=201)
-    def create_item(item: model, r: Resource = resource) -> model:
+def _list(store: SQLiteStore, resource: Resource) -> Callable[[], list[Any]]:
+    def endpoint() -> list[Any]:
+        return store.list(resource.table, resource.model)
+    return endpoint
+
+
+def _create(store: SQLiteStore, resource: Resource) -> Callable[[resource.model], resource.model]:
+    def endpoint(item: resource.model) -> resource.model:
         if not item.id:
-            item.id = f"{r.prefix}-{store.next_id(r.table, r.model):03d}"
+            item.id = f"{resource.prefix}-{store.next_id(resource.table, resource.model):03d}"
         try:
-            store.insert(r.table, item)
+            store.insert(resource.table, item)
         except sqlite3.IntegrityError:
-            raise HTTPException(409, f"{r.model.__name__} ID already exists")
+            raise HTTPException(409, f"{resource.model.__name__} ID already exists")
         return item
+    return endpoint
 
-    @router.get(f"{resource.path}/{{item_id}}", response_model=model)
-    def get_item(item_id: str, r: Resource = resource) -> model:
-        item = store.get(r.table, r.model, item_id)
+
+def _get(store: SQLiteStore, resource: Resource) -> Callable[[str], Any]:
+    def endpoint(item_id: str) -> Any:
+        item = store.get(resource.table, resource.model, item_id)
         if item is None:
-            raise HTTPException(404, f"{r.model.__name__} not found")
+            raise HTTPException(404, f"{resource.model.__name__} not found")
         return item
+    return endpoint
 
-    @router.put(f"{resource.path}/{{item_id}}", response_model=model)
-    def update_item(item_id: str, item: model, r: Resource = resource) -> model:
+
+def _update(store: SQLiteStore, resource: Resource) -> Callable[[resource.model, str], resource.model]:
+    def endpoint(item_id: str, item: resource.model) -> resource.model:
         if item_id != item.id:
-            raise HTTPException(400, f"{r.model.__name__} ID cannot be changed")
-        if not store.update(r.table, item):
-            raise HTTPException(404, f"{r.model.__name__} not found")
+            raise HTTPException(400, f"{resource.model.__name__} ID cannot be changed")
+        if not store.update(resource.table, item):
+            raise HTTPException(404, f"{resource.model.__name__} not found")
         return item
+    return endpoint

@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from pathlib import Path
+
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -14,7 +16,7 @@ app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
 store = SQLiteStore()
 app.include_router(create_router(store, RESOURCES))
 app.include_router(create_gui_router())
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
 
 @app.get("/", include_in_schema=False)

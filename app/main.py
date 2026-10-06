@@ -1,25 +1,25 @@
-from pathlib import Path
-
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from .api import create_router
 from .database import SQLiteStore
+from .gui import create_gui_router
 from .resources import RESOURCES
 from .ui import model_schema
 
-app = FastAPI(
-    title="Requirements Engineering Workbench",
-    version="0.1.0",
-    description="IREB-oriented Requirements Engineering API.",
-)
+app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
+              description="API-driven Requirements Engineering GUI server.")
+
 store = SQLiteStore()
-app.include_router(create_router(store, RESOURCES))
+app.include_router(create_router(store, RESOURCES), prefix="/api")
+app.include_router(create_gui_router())
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
-    return FileResponse(Path(__file__).parent / "static" / "index.html", media_type="text/html")
+    return RedirectResponse("/gui")
 
 
 @app.get("/health")

@@ -4,7 +4,7 @@ from typing import Any, get_args, get_origin, get_type_hints
 from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 
-from .models import Actor, Requirement, TraceLink, UseCase
+from .models import Actor, Requirement, TraceLink, UseCase, UserStory
 
 
 IREB_GLOSSARY = "https://cpre.ireb.org/en/downloads-and-resources/glossary"
@@ -12,45 +12,50 @@ IREB_DOWNLOADS = "https://cpre.ireb.org/en/downloads-and-resources/downloads"
 IREB_MODELING = "https://cpre.ireb.org/en/concept/requirements-modeling"
 
 FIELD_HELP: dict[str, tuple[str, str]] = {
-    "action": ("Aktion zur Bearbeitung des Elements. Modify öffnet die Zeile zur Änderung; Create legt ein neues Element an. Dies ist eine Workbench-Funktion und kein eigenes IREB-Modellelement.", IREB_GLOSSARY),
-    "id": ("Eindeutige Kennung des Elements innerhalb des Modells.", IREB_GLOSSARY),
-    "title": ("Kurzer, prägnanter Titel zur Identifikation der Anforderung.", IREB_GLOSSARY),
-    "statement": ("Textuelle Formulierung dessen, was gefordert wird.", IREB_GLOSSARY),
-    "type": ("Klassifikation der Anforderung, z. B. funktional oder qualitativ.", IREB_GLOSSARY),
-    "status": ("Lebenszyklusstatus der Anforderung: draft = Entwurf, proposed = vorgeschlagen, validated = fachlich geprüft/validiert, approved = genehmigt, implemented = umgesetzt, retired = zurückgezogen bzw. nicht mehr gültig. Der Status beschreibt den aktuellen Zustand einer Anforderung innerhalb ihres Lebenszyklus.", IREB_DOWNLOADS),
-    "priority": ("Relative Priorität, mit der eine Anforderung behandelt werden soll.", IREB_DOWNLOADS),
-    "source": ("Quelle oder Ursprung der Anforderung.", IREB_DOWNLOADS),
-    "rationale": ("Begründung für die Existenz oder Formulierung der Anforderung.", IREB_GLOSSARY),
-    "acceptance_criteria": ("Kriterien, anhand derer die Erfüllung der Anforderung überprüft werden kann.", IREB_GLOSSARY),
-    "related_use_cases": ("Use Cases, die mit dieser Anforderung in Beziehung stehen.", IREB_MODELING),
-    "depends_on": ("Anforderungen, von denen diese Anforderung abhängig ist.", IREB_DOWNLOADS),
-    "conflicts_with": ("Anforderungen, zu denen ein dokumentierter Konflikt besteht.", IREB_DOWNLOADS),
-    "name": ("Bezeichnung des Elements, z. B. eines Use Cases oder Actors.", IREB_GLOSSARY),
-    "goal": ("Das durch den Use Case angestrebte Nutzer- oder Systemziel.", IREB_GLOSSARY),
-    "description": ("Zusätzliche Beschreibung des Elements.", IREB_GLOSSARY),
-    "actors": ("Externe Akteure, die mit dem System bzw. Use Case interagieren.", IREB_MODELING),
-    "trigger": ("Ereignis oder Situation, die den Use Case startet.", IREB_MODELING),
-    "preconditions": ("Bedingungen, die vor Beginn des Use Cases erfüllt sein müssen.", IREB_MODELING),
-    "postconditions": ("Zustände oder Ergebnisse, die nach dem Use Case gelten.", IREB_MODELING),
-    "main_success_scenario": ("Normaler erfolgreicher Ablauf des Use Cases als Folge von Schritten.", IREB_MODELING),
-    "alternative_flows": ("Alternative Abläufe eines Use Cases für abweichende Situationen.", IREB_MODELING),
-    "exception_flows": ("Abläufe für Ausnahme- oder Fehlersituationen.", IREB_MODELING),
-    "includes": ("Verknüpfte Use Cases, deren Verhalten in diesen Use Case eingeschlossen wird.", IREB_MODELING),
-    "extends": ("Use Cases, die diesen Use Case unter definierten Bedingungen erweitern.", IREB_MODELING),
-    "generalizes": ("Generalisierungsbeziehungen zu allgemeineren oder spezielleren Use Cases.", IREB_MODELING),
-    "kind": ("Art des Actors, beispielsweise Person oder System.", IREB_MODELING),
-    "parent_actor": ("Übergeordneter Actor in einer Actor-Generalisation.", IREB_MODELING),
-    "source_id": ("ID des Ausgangselements einer Traceability-Beziehung.", IREB_DOWNLOADS),
-    "target_id": ("ID des Zielelements einer Traceability-Beziehung.", IREB_DOWNLOADS),
-    "relation": ("Semantik der Beziehung zwischen zwei verknüpften Elementen.", IREB_DOWNLOADS),
+    "action": ("Workbench action for editing the element.", IREB_GLOSSARY),
+    "id": ("Unique identifier of the model element.", IREB_GLOSSARY),
+    "title": ("Short, precise title identifying the requirement or user story.", IREB_GLOSSARY),
+    "statement": ("Textual formulation of what is required.", IREB_GLOSSARY),
+    "type": ("Requirement classification.", IREB_GLOSSARY),
+    "status": ("Lifecycle status: draft, proposed, validated, approved, implemented or retired.", IREB_DOWNLOADS),
+    "priority": ("Relative priority for planning and implementation.", IREB_DOWNLOADS),
+    "source": ("Origin or source of the requirement.", IREB_DOWNLOADS),
+    "rationale": ("Reason for the requirement or decision.", IREB_GLOSSARY),
+    "acceptance_criteria": ("Criteria used to verify fulfillment.", IREB_GLOSSARY),
+    "related_use_cases": ("Use cases related to this element.", IREB_MODELING),
+    "related_requirements": ("Requirements related to this element.", IREB_DOWNLOADS),
+    "depends_on": ("Elements on which this element depends.", IREB_DOWNLOADS),
+    "conflicts_with": ("Elements with a documented conflict.", IREB_DOWNLOADS),
+    "name": ("Name of the use case or actor.", IREB_GLOSSARY),
+    "goal": ("Goal achieved by the use case.", IREB_GLOSSARY),
+    "description": ("Additional description of the element.", IREB_GLOSSARY),
+    "actors": ("External actors interacting with the system or use case.", IREB_MODELING),
+    "actor": ("Primary actor of the user story.", IREB_MODELING),
+    "as_a": ("Role or persona in the user-story formulation.", IREB_GLOSSARY),
+    "i_want": ("Desired capability in the user-story formulation.", IREB_GLOSSARY),
+    "so_that": ("Expected benefit or value of the user story.", IREB_GLOSSARY),
+    "trigger": ("Event that starts the use case.", IREB_MODELING),
+    "preconditions": ("Conditions that must hold before the use case starts.", IREB_MODELING),
+    "postconditions": ("States or results that apply after the use case.", IREB_MODELING),
+    "main_success_scenario": ("Normal successful sequence of use-case steps.", IREB_MODELING),
+    "alternative_flows": ("Alternative use-case flows.", IREB_MODELING),
+    "exception_flows": ("Exception or error flows.", IREB_MODELING),
+    "includes": ("Use cases included by this use case.", IREB_MODELING),
+    "extends": ("Use cases extending this use case.", IREB_MODELING),
+    "generalizes": ("Use-case generalization relationships.", IREB_MODELING),
+    "kind": ("Actor kind, such as person or system.", IREB_MODELING),
+    "parent_actor": ("Parent actor in an actor generalization.", IREB_MODELING),
+    "source_id": ("Source element of a traceability link.", IREB_DOWNLOADS),
+    "target_id": ("Target element of a traceability link.", IREB_DOWNLOADS),
+    "relation": ("Semantics of the traceability relationship.", IREB_DOWNLOADS),
 }
 
-
 MODEL_DEFINITIONS = {
-    "Requirements": (Requirement, "/requirements"),
-    "Use Cases": (UseCase, "/use-cases"),
-    "Actors": (Actor, "/actors"),
-    "Trace Links": (TraceLink, "/traceability"),
+    "Requirements": (Requirement, "/api/requirements"),
+    "User Stories": (UserStory, "/api/user-stories"),
+    "Use Cases": (UseCase, "/api/use-cases"),
+    "Actors": (Actor, "/api/actors"),
+    "Traceability": (TraceLink, "/api/traceability"),
 }
 
 
@@ -59,24 +64,14 @@ def _field_schema(annotation: Any) -> dict[str, Any]:
     args = get_args(annotation)
 
     if isinstance(annotation, type) and issubclass(annotation, Enum):
-        return {
-            "kind": "enum",
-            "values": [member.value for member in annotation],
-        }
+        return {"kind": "enum", "values": [member.value for member in annotation]}
 
     if origin is list:
         item_type = args[0] if args else Any
-        return {
-            "kind": "json",
-            "data_type": "list",
-            "item_type": getattr(item_type, "__name__", str(item_type)),
-        }
+        return {"kind": "json", "data_type": "list", "item_type": getattr(item_type, "__name__", str(item_type))}
 
     if origin is dict:
         return {"kind": "json", "data_type": "dict"}
-
-    if origin is type(None):
-        return {"kind": "text", "data_type": "null"}
 
     if origin is not None and type(None) in args:
         non_none = next((arg for arg in args if arg is not type(None)), Any)
@@ -101,23 +96,15 @@ def _field_schema(annotation: Any) -> dict[str, Any]:
 
 def model_schema() -> dict[str, Any]:
     result: dict[str, Any] = {}
-
     for display_name, (model, endpoint) in MODEL_DEFINITIONS.items():
         hints = get_type_hints(model)
         fields = []
-
         for name, field in model.model_fields.items():
             schema = _field_schema(hints[name])
             default = None if field.default is PydanticUndefined else field.default
-
             if isinstance(default, Enum):
                 default = default.value
-
-            summary, documentation_url = FIELD_HELP.get(
-                name,
-                ("Attribut des IREB-orientierten Modells.", IREB_GLOSSARY),
-            )
-
+            summary, documentation_url = FIELD_HELP.get(name, ("Attribute of the requirements model.", IREB_GLOSSARY))
             schema.update({
                 "name": name,
                 "required": field.is_required(),
@@ -126,10 +113,5 @@ def model_schema() -> dict[str, Any]:
                 "documentation_url": documentation_url,
             })
             fields.append(schema)
-
-        result[display_name] = {
-            "endpoint": endpoint,
-            "fields": fields,
-        }
-
+        result[display_name] = {"endpoint": endpoint, "fields": fields}
     return result

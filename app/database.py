@@ -17,6 +17,7 @@ class SQLiteStore:
 
     TABLES = {
         "requirements": "requirements",
+        "user_stories": "user_stories",
         "use_cases": "use_cases",
         "actors": "actors",
         "trace_links": "trace_links",
@@ -37,28 +38,23 @@ class SQLiteStore:
         with self._connect() as connection:
             for table in self.TABLES.values():
                 connection.execute(
-                    f"""
-                    CREATE TABLE IF NOT EXISTS {table} (
+                    f"""CREATE TABLE IF NOT EXISTS {table} (
                         id TEXT PRIMARY KEY,
                         payload TEXT NOT NULL
-                    )
-                    """
+                    )"""
                 )
 
     def list(self, table: str, model: type[ModelT]) -> list[ModelT]:
         self._validate_table(table)
         with self._connect() as connection:
-            rows = connection.execute(
-                f"SELECT payload FROM {table} ORDER BY rowid"
-            ).fetchall()
+            rows = connection.execute(f"SELECT payload FROM {table} ORDER BY rowid").fetchall()
         return [model.model_validate(json.loads(row["payload"])) for row in rows]
 
     def get(self, table: str, model: type[ModelT], item_id: str) -> ModelT | None:
         self._validate_table(table)
         with self._connect() as connection:
             row = connection.execute(
-                f"SELECT payload FROM {table} WHERE id = ?",
-                (item_id,),
+                f"SELECT payload FROM {table} WHERE id = ?", (item_id,)
             ).fetchone()
         if row is None:
             return None

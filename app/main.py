@@ -12,7 +12,7 @@ app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
               description="API-driven Requirements Engineering GUI server.")
 
 store = SQLiteStore()
-app.include_router(create_router(store, RESOURCES), prefix="/api")
+app.include_router(create_router(store, RESOURCES))
 app.include_router(create_gui_router())
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 

@@ -12,7 +12,8 @@ async function loadProjects(selectPath){
   const response=await fetch("/api/projects");
   if(!response.ok)throw Error("Project list could not be loaded.");
   const paths=await response.json(),select=$("projectSelect");
-  select.replaceChildren(...paths.map(path=>new Option(path,path)));
+  const projects=await Promise.all(paths.map(async path=>({path,spec:await (await fetch("/api/project-spec?path="+encodeURIComponent(path))).json()})));
+  select.replaceChildren(...projects.map(({path,spec})=>new Option(spec.title||path,path)));
   if(!paths.length)throw Error("No project specification found.");
   select.value=selectPath&&paths.includes(selectPath)?selectPath:paths[0];
   await loadProjectSpec(select.value);

@@ -32,3 +32,9 @@ def health() -> dict[str, str]:
 @app.get("/api/schema")
 def get_model_schema():
     return model_schema()
+
+
+@app.get("/api/projects")
+def get_projects():
+    root = Path(__file__).parent.parent
+    return sorted(str(p.relative_to(root)) for p in root.rglob("*spec.json") if ".git" not in p.parts)

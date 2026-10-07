@@ -4,6 +4,10 @@ const label=name=>name.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
 const definition=()=>schema[selectedType];
 
 async function init(){
+  const projects=await fetch("/api/projects");
+  if(!projects.ok)throw Error("Project list could not be loaded.");
+  const projectSelect=$("projectSelect");
+  (await projects.json()).forEach(path=>projectSelect.add(new Option(path,path)));
   const response=await fetch("/api/schema");
   if(!response.ok)throw Error("Model schema could not be loaded.");
   schema=await response.json();

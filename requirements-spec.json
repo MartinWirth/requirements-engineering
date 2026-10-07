@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "requirements-engineering-workbench-spec.json",
+  "title": "Requirements Engineering Workbench Specification",
+  "version": "0.1.0",
+  "status": "baseline",
+  "description": "Baseline requirements for a local, API-first Requirements Engineering Workbench aligned with IREB CPRE terminology.",
+  "architecture": {
+    "runtime": "Python 3.12+",
+    "backend": "FastAPI",
+    "validation": "Pydantic",
+    "persistence": "SQLite",
+    "frontend": "HTML/CSS/JavaScript",
+    "interface": "REST API"
+  },
+  "functional_requirements": [
+    {"id":"FR-001","title":"Manage requirements","shall":"create, read, update and list requirements","priority":"must"},
+    {"id":"FR-002","title":"Manage user stories","shall":"create, read, update and list user stories","priority":"must"},
+    {"id":"FR-003","title":"Manage use cases","shall":"create, read, update and list use cases","priority":"must"},
+    {"id":"FR-004","title":"Manage actors","shall":"create, read, update and list actors","priority":"must"},
+    {"id":"FR-005","title":"Manage traceability","shall":"create, read, update and list trace links","priority":"must"},
+    {"id":"FR-006","title":"Generate identifiers","shall":"automatically generate entity-specific identifiers for new entities","priority":"must"},
+    {"id":"FR-007","title":"Persist data","shall":"persist all managed entities in SQLite","priority":"must"},
+    {"id":"FR-008","title":"Validate data","shall":"validate entity data using the domain models","priority":"must"},
+    {"id":"FR-009","title":"Reject duplicate IDs","shall":"reject duplicate identifiers with a conflict response","priority":"must"},
+    {"id":"FR-010","title":"Filter data","shall":"allow filtering of the currently selected model","priority":"should"},
+    {"id":"FR-011","title":"Select model","shall":"provide a model select box for Requirements, User Stories, Use Cases, Actors and Traceability","priority":"must"},
+    {"id":"FR-012","title":"Create and modify","shall":"provide New and Modify actions for model elements","priority":"must"},
+    {"id":"FR-013","title":"Tooltip modes","shall":"provide Short + IREB, API call and Full + dependencies tooltip modes","priority":"should"},
+    {"id":"FR-014","title":"Field help","shall":"provide contextual field help and relevant IREB links where available","priority":"should"},
+    {"id":"FR-015","title":"Expose schema","shall":"expose model and field metadata through an API schema endpoint","priority":"must"},
+    {"id":"FR-016","title":"Health check","shall":"provide a health endpoint","priority":"must"}
+  ],
+  "domain_models": {
+    "Requirement": {
+      "fields":["id","title","statement","type","status","priority","source","rationale","acceptance_criteria","related_use_cases","depends_on","conflicts_with"],
+      "type_values":["functional","quality","constraint","user","system"],
+      "status_values":["draft","proposed","validated","approved","implemented","retired"]
+    },
+    "UserStory": {
+      "fields":["id","title","as_a","i_want","so_that","acceptance_criteria","actor","related_requirements","related_use_cases","priority","status"]
+    },
+    "UseCase": {
+      "fields":["id","name","goal","description","actors","trigger","preconditions","postconditions","main_success_scenario","alternative_flows","exception_flows","includes","extends","generalizes","related_requirements","acceptance_criteria","priority","status"]
+    },
+    "Actor": {
+      "fields":["id","name","description","kind","parent_actor"]
+    },
+    "TraceLink": {
+      "fields":["id","source_id","target_id","relation"]
+    }
+  },
+  "api_requirements": [
+    {"id":"API-001","shall":"provide collection GET/POST and item GET/PUT endpoints for each managed model","priority":"must"},
+    {"id":"API-002","shall":"return HTTP 404 when an item does not exist","priority":"must"},
+    {"id":"API-003","shall":"return HTTP 409 for duplicate identifiers","priority":"must"},
+    {"id":"API-004","shall":"prevent changing an entity ID during update","priority":"must"},
+    {"id":"API-005","shall":"provide interactive OpenAPI documentation","priority":"should"}
+  ],
+  "gui_requirements": [
+    {"id":"GUI-001","shall":"serve the workbench at /gui and redirect / to /gui"},
+    {"id":"GUI-002","shall":"display the application title, Model selector and Tooltip type selector in the first header line"},
+    {"id":"GUI-003","shall":"not display a left-side model navigation pane"},
+    {"id":"GUI-004","shall":"switch the displayed model when the Model selector changes"},
+    {"id":"GUI-005","shall":"display model elements in a table"},
+    {"id":"GUI-006","shall":"provide filtering, New and Modify controls"},
+    {"id":"GUI-007","shall":"show validation feedback for invalid input"},
+    {"id":"GUI-008","shall":"show action tooltips according to the selected Tooltip type"}
+  ],
+  "requirements_engineering_scope": {
+    "requirements":["functional requirements","quality requirements","constraints","user requirements","system requirements","sources","acceptance criteria"],
+    "use_case_engineering":["actors","system boundary","use-case identification","main success scenario","alternative flows","exception flows","preconditions","postconditions","trigger","goal","includes","extends","generalization","traceability"],
+    "modeling":["context models","information/class models","activity diagrams","data-flow diagrams","state machines","sequence diagrams","communication diagrams"],
+    "requirements_management":["IDs and versioning","status and lifecycle","priority","risk","dependencies","conflicts","traceability","change requests","baselines","review/validation records"]
+  },
+  "non_functional_requirements": [
+    {"id":"NFR-001","category":"maintainability","shall":"use compact, modular implementation"},
+    {"id":"NFR-002","category":"usability","shall":"provide direct access to model selection, filtering, creation and modification"},
+    {"id":"NFR-003","category":"portability","shall":"run locally without an external database server"},
+    {"id":"NFR-004","category":"traceability","shall":"represent relationships through explicit references and trace links"}
+  ],
+  "traceability": {
+    "principle":"Every implemented feature should be traceable to one or more requirements.",
+    "relations":["satisfies","depends_on","conflicts_with","includes","extends","generalizes","related_to"]
+  },
+  "verification": {
+    "test_levels":["domain model unit tests","persistence tests","REST API tests","GUI behavior tests"],
+    "acceptance":"A requirement is accepted when its specified behavior is implemented and covered by an appropriate verification test."
+  },
+  "future_requirements": {
+    "status":"planned",
+    "items":["use-case diagrams","additional modeling diagrams","requirements versioning","risk management","change requests","baselines","review and validation records","test-case traceability"]
+  }
+}

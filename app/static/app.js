@@ -1,7 +1,7 @@
 let schema={},spec=null,selectedType="Requirements",rows=[],tooltipTimer=null,tooltipMode="short";
 const $=id=>document.getElementById(id),container=$("tableContainer"),message=$("message"),tooltip=$("tooltip"),filter=$("filter");
 const label=name=>name.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
-$("newProjectButton").addEventListener("click",newProject);
+$("newProjectButton").addEventListener("click",()=>$("newProjectDialog").showModal());
 const definition=()=>schema[selectedType];
 
 async function loadProjectSpec(path){
@@ -20,9 +20,9 @@ async function loadProjects(selectPath){
   await loadProjectSpec(select.value);
 }
 async function newProject(){
-  const name=prompt("Project specification name (for example: customer-portal)");
-  if(!name)return;
-  const title=prompt("Project title:",name.replace(/[-_]+/g," ").replace(/\b\w/g,c=>c.toUpperCase()))||"";
+  const dialog=$("newProjectDialog"),form=$("newProjectForm"),name=$("projectName").value.trim(),title=$("projectTitle").value.trim();
+  if(!name||!form.reportValidity())return;
+  dialog.close();
   const response=await fetch("/api/project-spec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,title})});
   if(!response.ok){const detail=await response.json().catch(()=>({}));return showError(detail.detail||"Project specification could not be created.");}
   await loadProjects((await response.json()).path);
@@ -35,7 +35,7 @@ async function init(){
   if(!response.ok)throw Error("Model schema could not be loaded.");
   schema=await response.json();
   $("projectSelect").onchange=async e=>{try{await loadProjectSpec(e.target.value);filter.value="";await loadTable()}catch(error){showError(error.message)}};
-  $("newProjectButton").onclick=newProject;
+  $("newProjectForm").addEventListener("submit",e=>{e.preventDefault();newProject()});
   $("modelSelect").onchange=e=>{selectedType=e.target.value;filter.value="";loadTable()};
   filter.oninput=()=>renderTable();
   $("tooltipMode").onchange=e=>{tooltipMode=e.target.value;hideTooltip()};

@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException, Query
 from pathlib import Path
 import json
+import re
 
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from .api import create_router
 from .database import SQLiteStore
@@ -45,9 +47,37 @@ def get_projects():
 def get_project_spec(path: str = Query(...)):
     root = Path(__file__).parent.parent.resolve()
     spec = (root / path).resolve()
-    if root not in spec.parents or spec.name.endswith("spec.json") is False or not spec.is_file():
+    if root not in spec.parents or not spec.name.endswith("spec.json") or not spec.is_file():
         raise HTTPException(404, "Specification not found")
     try:
         return json.loads(spec.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(500, "Specification could not be loaded") from exc
+
+
+class ProjectSpecCreate(BaseModel):
+    name: str
+    title: str = ""
+
+
+@app.post("/api/project-spec")
+def create_project_spec(request: ProjectSpecCreate):
+    root = Path(__file__).parent.parent.resolve()
+    name = re.sub(r"[^A-Za-z0-9_-]+", "-", request.name.strip()).strip("-_")
+    if not name:
+        raise HTTPException(400, "Project name is required")
+    filename = name if name.endswith("spec.json") else name + "-spec.json"
+    target = (root / filename).resolve()
+    if root not in target.parents:
+        raise HTTPException(400, "Invalid project name")
+    if target.exists():
+        raise HTTPException(409, "Project specification already exists")
+    template = root / "requirements-engineering-spec.json"
+    try:
+        spec = json.loads(template.read_text(encoding="utf-8"))
+        spec["$id"] = filename
+        spec["title"] = request.title.strip() or name.replace("-", " ").replace("_", " ").title()
+        target.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(500, "Project specification could not be created") from exc
+    return {"path": filename, "spec": spec}

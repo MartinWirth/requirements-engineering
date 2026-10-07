@@ -1,16 +1,26 @@
-let schema={},selectedType="Requirements",rows=[],tooltipTimer=null,tooltipMode="short";
+let schema={},spec=null,selectedType="Requirements",rows=[],tooltipTimer=null,tooltipMode="short";
 const $=id=>document.getElementById(id),container=$("tableContainer"),message=$("message"),tooltip=$("tooltip"),filter=$("filter");
 const label=name=>name.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
 const definition=()=>schema[selectedType];
 
+async function loadProjectSpec(path){
+  const response=await fetch("/api/project-spec?path="+encodeURIComponent(path));
+  if(!response.ok)throw Error("Project specification could not be loaded.");
+  spec=await response.json();
+}
+
 async function init(){
   const projects=await fetch("/api/projects");
   if(!projects.ok)throw Error("Project list could not be loaded.");
-  const projectSelect=$("projectSelect");
-  (await projects.json()).forEach(path=>projectSelect.add(new Option(path,path)));
+  const projectSelect=$("projectSelect"),paths=await projects.json();
+  paths.forEach(path=>projectSelect.add(new Option(path,path)));
+  if(!paths.length)throw Error("No project specification found.");
+  projectSelect.selectedIndex=0;
+  await loadProjectSpec(projectSelect.value);
   const response=await fetch("/api/schema");
   if(!response.ok)throw Error("Model schema could not be loaded.");
   schema=await response.json();
+  projectSelect.onchange=async e=>{await loadProjectSpec(e.target.value);filter.value="";loadTable()};
   $("modelSelect").onchange=e=>{selectedType=e.target.value;filter.value="";loadTable()};
   filter.oninput=()=>renderTable();
   $("tooltipMode").onchange=e=>{tooltipMode=e.target.value;hideTooltip()};
@@ -130,5 +140,6 @@ async function loadTable(){
   if(!response.ok)return showError("Could not load "+selectedType+".");
   rows=await response.json();setActiveNav();renderTable();
 }
-function showMessage(text){message.textContent=text;message.className="success"}function showError(text){message.textContent=text;message.className="error"}
+function showMessage(text){if(message){message.textContent=text;message.className="success"}}
+function showError(text){if(message){message.textContent=text;message.className="error"}else console.error(text)}
 init().catch(error=>showError(error.message));

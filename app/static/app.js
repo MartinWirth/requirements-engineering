@@ -90,6 +90,14 @@ function renderTable(){
   const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});
   if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."}container.append(table);
 }
-async function loadTable(){const response=await fetch(definition().endpoint);if(!response.ok)return showError("Could not load "+selectedType+".");rows=await response.json();setActiveNav();renderTable()}
+async function loadTable(){
+  const response=await fetch(definition().endpoint);
+  if(!response.ok)return showError("Could not load "+selectedType+".");
+  rows=await response.json();
+  if(selectedType==="Requirements"&&spec?.functional_requirements){
+    rows=spec.functional_requirements.map(r=>({id:r.id,title:r.title,statement:r.shall,type:"functional",status:"draft",priority:r.priority,source:"project specification"}));
+  }
+  setActiveNav();renderTable();
+}
 function showMessage(text){if(message){message.textContent=text;message.className="success"}}function showError(text){if(message){message.textContent=text;message.className="error"}else console.error(text)}
 init().catch(error=>showError(error.message));

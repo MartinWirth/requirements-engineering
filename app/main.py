@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from pathlib import Path
+import json
 
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -38,3 +39,15 @@ def get_model_schema():
 def get_projects():
     root = Path(__file__).parent.parent
     return sorted(str(p.relative_to(root)) for p in root.rglob("*spec.json") if ".git" not in p.parts)
+
+
+@app.get("/api/project-spec")
+def get_project_spec(path: str = Query(...)):
+    root = Path(__file__).parent.parent.resolve()
+    spec = (root / path).resolve()
+    if root not in spec.parents or spec.name.endswith("spec.json") is False or not spec.is_file():
+        raise HTTPException(404, "Specification not found")
+    try:
+        return json.loads(spec.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(500, "Specification could not be loaded") from exc

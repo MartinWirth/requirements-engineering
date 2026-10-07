@@ -7,16 +7,14 @@ async function init(){
   const response=await fetch("/api/schema");
   if(!response.ok)throw Error("Model schema could not be loaded.");
   schema=await response.json();
-  document.querySelectorAll("#navigation button").forEach(button=>{
-    button.onclick=()=>{selectedType=button.dataset.type;filter.value="";setActiveNav();loadTable()};
-  });
+  $("modelSelect").onchange=e=>{selectedType=e.target.value;filter.value="";loadTable()};
   filter.oninput=()=>renderTable();
   $("tooltipMode").onchange=e=>{tooltipMode=e.target.value;hideTooltip()};
   $("newButton").onclick=()=>renderCreate();
   setActiveNav();await loadTable();
 }
 function setActiveNav(){
-  document.querySelectorAll("#navigation button").forEach(b=>b.classList.toggle("active",b.dataset.type===selectedType));
+  $("modelSelect").value=selectedType;
   $("pageTitle").textContent=selectedType;
 }
 function visibleRows(){

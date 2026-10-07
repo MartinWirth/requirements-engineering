@@ -1,0 +1,1395 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "email-reader-spec.json",
+  "title": "Email Reader Specification",
+  "version": "1.0.0",
+  "status": "draft",
+  "description": "Requirements specification for an email reader focused on message browsing, sorting, grouping, selection and traceable requirements engineering.",
+  "architecture": {
+    "style": "API-driven web application",
+    "backend": "FastAPI",
+    "persistence": "SQLite",
+    "frontend": "HTML/CSS/JavaScript",
+    "principle": "separate email data access, domain model, API and presentation"
+  },
+  "domain_models": {
+    "EmailAccount": [
+      "id",
+      "name",
+      "server",
+      "protocol",
+      "username"
+    ],
+    "MailFolder": [
+      "id",
+      "account_id",
+      "name",
+      "path",
+      "message_count"
+    ],
+    "EmailMessage": [
+      "id",
+      "folder_id",
+      "from",
+      "to",
+      "cc",
+      "date",
+      "subject",
+      "body",
+      "attachments",
+      "read"
+    ],
+    "Attachment": [
+      "id",
+      "message_id",
+      "filename",
+      "content_type",
+      "size"
+    ],
+    "MessageSelection": [
+      "folder_id",
+      "message_ids"
+    ],
+    "MessageGroup": [
+      "attribute",
+      "value",
+      "count",
+      "children"
+    ]
+  },
+  "user_stories": [
+    {
+      "id": "US-001",
+      "title": "Browse folder messages",
+      "as_a": "user",
+      "i_want": "to see the messages in a selected folder",
+      "so_that": "I can review my email efficiently",
+      "acceptance_criteria": [
+        "A folder can be selected",
+        "Its messages are displayed"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "US-002",
+      "title": "Sort messages",
+      "as_a": "user",
+      "i_want": "to sort messages by DATE, FROM and SUBJECT",
+      "so_that": "I can find relevant messages quickly",
+      "acceptance_criteria": [
+        "DATE sorting works",
+        "FROM sorting works",
+        "SUBJECT sorting works"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "FR-005",
+        "FR-012"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "US-003",
+      "title": "Group messages",
+      "as_a": "user",
+      "i_want": "messages grouped by FROM and SUBJECT",
+      "so_that": "I can recognize related messages quickly",
+      "acceptance_criteria": [
+        "FROM groups are visible",
+        "Each FROM group contains SUBJECT groups",
+        "Both group levels show counts"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "FR-006",
+        "FR-007",
+        "FR-010",
+        "FR-011"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "US-004",
+      "title": "Select messages",
+      "as_a": "user",
+      "i_want": "to select one or multiple messages",
+      "so_that": "I can inspect a chosen set of messages",
+      "acceptance_criteria": [
+        "Single selection works",
+        "Multiple selection works",
+        "Selection count is shown"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "FR-008",
+        "FR-009"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "US-005",
+      "title": "Read a message",
+      "as_a": "user",
+      "i_want": "to read the selected message and its metadata",
+      "so_that": "I can understand its content and context",
+      "acceptance_criteria": [
+        "Message metadata is displayed",
+        "Message body is displayed safely"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "FR-013",
+        "FR-014",
+        "FR-015",
+        "FR-016"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "US-006",
+      "title": "Refresh email",
+      "as_a": "user",
+      "i_want": "to refresh the selected folder",
+      "so_that": "I can see current messages",
+      "acceptance_criteria": [
+        "Refresh is available",
+        "New server data is reflected"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "FR-018",
+        "NFR-004"
+      ],
+      "priority": "medium",
+      "status": "proposed"
+    },
+    {
+      "id": "US-007",
+      "title": "Protect email data",
+      "as_a": "user",
+      "i_want": "my email and credentials protected",
+      "so_that": "private information remains private",
+      "acceptance_criteria": [
+        "Credentials are protected",
+        "Message content is not unnecessarily exposed"
+      ],
+      "actor": "ACT-001",
+      "related_requirements": [
+        "NFR-001",
+        "NFR-002",
+        "NFR-006"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    }
+  ],
+  "use_cases": [
+    {
+      "id": "UC-001",
+      "name": "Read Message",
+      "goal": "Display a selected email safely and completely.",
+      "description": "The user selects a message and reads its metadata and body.",
+      "actors": [
+        "ACT-001",
+        "ACT-003"
+      ],
+      "trigger": "User selects a message",
+      "preconditions": [
+        "A folder is selected",
+        "Messages are loaded"
+      ],
+      "postconditions": [
+        "Selected message is displayed"
+      ],
+      "main_success_scenario": [
+        {
+          "id": "1",
+          "name": "Select message"
+        },
+        {
+          "id": "2",
+          "name": "Load message data"
+        },
+        {
+          "id": "3",
+          "name": "Sanitize body"
+        },
+        {
+          "id": "4",
+          "name": "Display metadata and body"
+        }
+      ],
+      "alternative_flows": [],
+      "exception_flows": [
+        {
+          "id": "E1",
+          "name": "Message unavailable",
+          "steps": [
+            "Show an error without exposing credentials or internal details"
+          ]
+        }
+      ],
+      "includes": [],
+      "extends": [],
+      "generalizes": [],
+      "related_requirements": [
+        "FR-013",
+        "FR-014",
+        "FR-015",
+        "FR-016"
+      ],
+      "acceptance_criteria": [
+        "Selected message is readable",
+        "HTML content is safely rendered"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "UC-002",
+      "name": "Sort Messages",
+      "goal": "Present messages in a user-selected order.",
+      "description": "The user sorts the current message list by DATE, FROM or SUBJECT.",
+      "actors": [
+        "ACT-001",
+        "ACT-003"
+      ],
+      "trigger": "User chooses a sort attribute",
+      "preconditions": [
+        "Messages are loaded"
+      ],
+      "postconditions": [
+        "Message order reflects the selected attribute"
+      ],
+      "main_success_scenario": [
+        {
+          "id": "1",
+          "name": "Choose DATE, FROM or SUBJECT"
+        },
+        {
+          "id": "2",
+          "name": "Sort messages"
+        },
+        {
+          "id": "3",
+          "name": "Refresh grouped presentation"
+        }
+      ],
+      "alternative_flows": [],
+      "exception_flows": [],
+      "includes": [],
+      "extends": [],
+      "generalizes": [],
+      "related_requirements": [
+        "FR-005",
+        "FR-012"
+      ],
+      "acceptance_criteria": [
+        "All supported sort attributes produce deterministic ordering"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "UC-003",
+      "name": "Group Selected Messages",
+      "goal": "Summarize selected messages using FROM and SUBJECT groups.",
+      "description": "The system presents selected messages using nested FROM and SUBJECT groups with counts.",
+      "actors": [
+        "ACT-001",
+        "ACT-003"
+      ],
+      "trigger": "User selects multiple messages",
+      "preconditions": [
+        "Messages are loaded"
+      ],
+      "postconditions": [
+        "Selection summary and nested groups are displayed"
+      ],
+      "main_success_scenario": [
+        {
+          "id": "1",
+          "name": "Select multiple messages"
+        },
+        {
+          "id": "2",
+          "name": "Count selected messages"
+        },
+        {
+          "id": "3",
+          "name": "Determine distinct FROM values"
+        },
+        {
+          "id": "4",
+          "name": "Build FROM groups"
+        },
+        {
+          "id": "5",
+          "name": "Build SUBJECT groups"
+        },
+        {
+          "id": "6",
+          "name": "Display counts and values"
+        }
+      ],
+      "alternative_flows": [],
+      "exception_flows": [],
+      "includes": [],
+      "extends": [],
+      "generalizes": [],
+      "related_requirements": [
+        "FR-006",
+        "FR-007",
+        "FR-009",
+        "FR-010",
+        "FR-011"
+      ],
+      "acceptance_criteria": [
+        "Heading contains folder and selection statistics",
+        "Every group displays its count"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "UC-004",
+      "name": "Change Folder",
+      "goal": "Switch the message context to another mail folder.",
+      "description": "The user selects another folder and the system loads its messages.",
+      "actors": [
+        "ACT-001",
+        "ACT-002",
+        "ACT-003"
+      ],
+      "trigger": "User selects a folder",
+      "preconditions": [
+        "An email account is available"
+      ],
+      "postconditions": [
+        "Selected folder becomes active"
+      ],
+      "main_success_scenario": [
+        {
+          "id": "1",
+          "name": "Select folder"
+        },
+        {
+          "id": "2",
+          "name": "Load messages"
+        },
+        {
+          "id": "3",
+          "name": "Display message list"
+        }
+      ],
+      "alternative_flows": [],
+      "exception_flows": [
+        {
+          "id": "E1",
+          "name": "Folder cannot be loaded",
+          "steps": [
+            "Report the failure and keep the previous context where possible"
+          ]
+        }
+      ],
+      "includes": [],
+      "extends": [],
+      "generalizes": [],
+      "related_requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-018",
+        "NFR-004"
+      ],
+      "acceptance_criteria": [
+        "Folder changes are reflected in the message list"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    },
+    {
+      "id": "UC-005",
+      "name": "Configure Account",
+      "goal": "Make an email account available to the reader.",
+      "description": "An authorized user configures an email account and its connection settings.",
+      "actors": [
+        "ACT-001",
+        "ACT-002"
+      ],
+      "trigger": "User adds or edits an account",
+      "preconditions": [],
+      "postconditions": [
+        "Account configuration is available for use"
+      ],
+      "main_success_scenario": [
+        {
+          "id": "1",
+          "name": "Enter account settings"
+        },
+        {
+          "id": "2",
+          "name": "Validate connection"
+        },
+        {
+          "id": "3",
+          "name": "Store protected configuration"
+        }
+      ],
+      "alternative_flows": [],
+      "exception_flows": [
+        {
+          "id": "E1",
+          "name": "Connection fails",
+          "steps": [
+            "Show a clear connection error"
+          ]
+        }
+      ],
+      "includes": [],
+      "extends": [],
+      "generalizes": [],
+      "related_requirements": [
+        "FR-001",
+        "NFR-002"
+      ],
+      "acceptance_criteria": [
+        "Valid account can be configured",
+        "Credentials are protected"
+      ],
+      "priority": "high",
+      "status": "proposed"
+    }
+  ],
+  "actors": [
+    {
+      "id": "ACT-001",
+      "name": "Email User",
+      "description": "Person using the email reader to browse and read messages.",
+      "kind": "person",
+      "parent_actor": null
+    },
+    {
+      "id": "ACT-002",
+      "name": "Email Server",
+      "description": "External mail service providing accounts, folders and messages.",
+      "kind": "system",
+      "parent_actor": null
+    },
+    {
+      "id": "ACT-003",
+      "name": "Email Reader",
+      "description": "Application responsible for loading, organizing and displaying email.",
+      "kind": "system",
+      "parent_actor": null
+    }
+  ],
+  "api_requirements": [
+    {
+      "id": "API-001",
+      "title": "Account API",
+      "statement": "The API shall expose account configuration and connection operations.",
+      "status": "proposed"
+    },
+    {
+      "id": "API-002",
+      "title": "Folder API",
+      "statement": "The API shall expose available folders and folder selection context.",
+      "status": "proposed"
+    },
+    {
+      "id": "API-003",
+      "title": "Message API",
+      "statement": "The API shall expose message list and message detail operations.",
+      "status": "proposed"
+    },
+    {
+      "id": "API-004",
+      "title": "Selection API",
+      "statement": "The API shall support selection and grouped message data required by the UI.",
+      "status": "proposed"
+    },
+    {
+      "id": "API-005",
+      "title": "Refresh API",
+      "statement": "The API shall support refreshing folder message data.",
+      "status": "proposed"
+    }
+  ],
+  "gui_requirements": [
+    {
+      "id": "GUI-001",
+      "title": "Folder navigation",
+      "statement": "The GUI shall provide clear folder navigation."
+    },
+    {
+      "id": "GUI-002",
+      "title": "Message list",
+      "statement": "The GUI shall provide a message list with sorting controls."
+    },
+    {
+      "id": "GUI-003",
+      "title": "FROM grouping",
+      "statement": "The GUI shall show FROM groups with counts."
+    },
+    {
+      "id": "GUI-004",
+      "title": "SUBJECT grouping",
+      "statement": "The GUI shall show SUBJECT groups nested within FROM groups with counts."
+    },
+    {
+      "id": "GUI-005",
+      "title": "Selection heading",
+      "statement": "The GUI shall show folder, selection count and distinct FROM count for multiple selections."
+    },
+    {
+      "id": "GUI-006",
+      "title": "Message pane",
+      "statement": "The GUI shall display message metadata and body."
+    },
+    {
+      "id": "GUI-007",
+      "title": "Safe HTML",
+      "statement": "The GUI shall render message HTML safely."
+    },
+    {
+      "id": "GUI-008",
+      "title": "Refresh control",
+      "statement": "The GUI shall provide a refresh action."
+    }
+  ],
+  "traceability": {
+    "principle": "Every implemented behavior should be traceable from a user-facing requirement to one or more model elements and verification criteria.",
+    "relations": [
+      "satisfies",
+      "depends_on",
+      "conflicts_with",
+      "verifies"
+    ]
+  },
+  "verification": {
+    "functional_tests": [
+      "folder selection",
+      "message loading",
+      "DATE/FROM/SUBJECT sorting",
+      "nested FROM/SUBJECT grouping",
+      "group counts",
+      "single and multiple selection",
+      "selection heading",
+      "message rendering",
+      "HTML sanitization",
+      "refresh"
+    ],
+    "quality_tests": [
+      "credential protection",
+      "privacy checks",
+      "large-folder performance",
+      "failure recovery",
+      "keyboard accessibility"
+    ]
+  },
+  "future_requirements": [
+    "Thread/conversation view",
+    "IMAP/POP search integration",
+    "Tags and labels",
+    "Bulk archive/move/delete",
+    "AI-assisted summarization"
+  ],
+  "project_data": {
+    "requirements": [
+      {
+        "id": "FR-001",
+        "title": "Manage email accounts",
+        "statement": "The system shall configure and access one or more email accounts.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-002",
+        "title": "Manage folders",
+        "statement": "The system shall display accessible mail folders and allow the user to select a folder.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-003",
+        "title": "Load messages",
+        "statement": "The system shall load messages belonging to the selected folder.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-004",
+        "title": "Display message list",
+        "statement": "The system shall display the messages of the selected folder in a list.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-005",
+        "title": "Sort messages",
+        "statement": "The system shall sort the message list by DATE, FROM and SUBJECT.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-006",
+        "title": "Group messages",
+        "statement": "The system shall group displayed messages by FROM and within each FROM group by SUBJECT.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-007",
+        "title": "Display group counts",
+        "statement": "The system shall display the number of messages for every FROM and SUBJECT group.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-008",
+        "title": "Select messages",
+        "statement": "The system shall allow the user to select one or multiple messages.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-009",
+        "title": "Multiple-selection heading",
+        "statement": "For multiple selected messages, the message pane heading shall contain the folder name, number of selected messages and number of different FROM values.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-010",
+        "title": "FROM group heading",
+        "statement": "Each FROM group shall display the FROM value and the number of messages at the beginning of the group line.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-011",
+        "title": "SUBJECT group heading",
+        "statement": "Each SUBJECT group within a FROM group shall display the SUBJECT value and the number of messages at the beginning of the group line.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-012",
+        "title": "Preserve sorted order",
+        "statement": "Messages shall retain the active sorting order within their groups.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-013",
+        "title": "Open message",
+        "statement": "The system shall display the complete selected message in the message pane.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-014",
+        "title": "Display message metadata",
+        "statement": "The message pane shall display FROM, TO, CC, DATE and SUBJECT.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-015",
+        "title": "Display message body",
+        "statement": "The system shall display the message body in a readable format.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-016",
+        "title": "Handle HTML safely",
+        "statement": "HTML message content shall be sanitized before being rendered in the application.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-017",
+        "title": "Display attachments",
+        "statement": "The system shall display available attachments and their metadata.",
+        "type": "functional",
+        "status": "future",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-018",
+        "title": "Refresh folder",
+        "statement": "The system shall allow the user to refresh the selected folder and retrieve current messages.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-019",
+        "title": "Maintain selection",
+        "statement": "The system shall maintain selection state while the user changes the presentation of the current message list where technically possible.",
+        "type": "functional",
+        "status": "proposed",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-020",
+        "title": "Keyboard interaction",
+        "statement": "The system shall support keyboard selection and opening of messages.",
+        "type": "functional",
+        "status": "future",
+        "priority": "low",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-021",
+        "title": "Search messages",
+        "statement": "The system shall support searching messages by relevant message attributes and content.",
+        "type": "functional",
+        "status": "future",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-022",
+        "title": "Thread view",
+        "statement": "The system shall support an optional conversation or thread view.",
+        "type": "functional",
+        "status": "future",
+        "priority": "low",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "FR-023",
+        "title": "Bulk operations",
+        "statement": "The system shall support bulk operations on selected messages such as archive, move and delete.",
+        "type": "functional",
+        "status": "future",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-001",
+        "title": "Privacy",
+        "statement": "Email content and credentials shall not be exposed to unauthorized users or external services.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-002",
+        "title": "Credential security",
+        "statement": "Email credentials shall be stored and transmitted using appropriate security mechanisms and shall not be persisted in plain text.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-003",
+        "title": "Performance",
+        "statement": "The message list shall remain responsive when displaying large folders by using pagination, incremental loading or another scalable mechanism.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-004",
+        "title": "Reliability",
+        "statement": "Temporary email-server failures shall be reported clearly without losing already loaded local UI state.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-005",
+        "title": "Accessibility",
+        "statement": "The user interface shall provide keyboard-accessible controls, meaningful labels and sufficient visual distinction.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-006",
+        "title": "Auditability",
+        "statement": "Important message operations shall be traceable in application logs without logging message content or credentials unnecessarily.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "medium",
+        "source": "Email Reader Specification"
+      },
+      {
+        "id": "NFR-007",
+        "title": "Testability",
+        "statement": "Core grouping, sorting and selection behavior shall be testable independently from the user interface.",
+        "type": "quality",
+        "status": "proposed",
+        "priority": "high",
+        "source": "Email Reader Specification"
+      }
+    ],
+    "user_stories": [
+      {
+        "id": "US-001",
+        "title": "Browse folder messages",
+        "as_a": "user",
+        "i_want": "to see the messages in a selected folder",
+        "so_that": "I can review my email efficiently",
+        "acceptance_criteria": [
+          "A folder can be selected",
+          "Its messages are displayed"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "FR-002",
+          "FR-003",
+          "FR-004"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "US-002",
+        "title": "Sort messages",
+        "as_a": "user",
+        "i_want": "to sort messages by DATE, FROM and SUBJECT",
+        "so_that": "I can find relevant messages quickly",
+        "acceptance_criteria": [
+          "DATE sorting works",
+          "FROM sorting works",
+          "SUBJECT sorting works"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "FR-005",
+          "FR-012"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "US-003",
+        "title": "Group messages",
+        "as_a": "user",
+        "i_want": "messages grouped by FROM and SUBJECT",
+        "so_that": "I can recognize related messages quickly",
+        "acceptance_criteria": [
+          "FROM groups are visible",
+          "Each FROM group contains SUBJECT groups",
+          "Both group levels show counts"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "FR-006",
+          "FR-007",
+          "FR-010",
+          "FR-011"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "US-004",
+        "title": "Select messages",
+        "as_a": "user",
+        "i_want": "to select one or multiple messages",
+        "so_that": "I can inspect a chosen set of messages",
+        "acceptance_criteria": [
+          "Single selection works",
+          "Multiple selection works",
+          "Selection count is shown"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "FR-008",
+          "FR-009"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "US-005",
+        "title": "Read a message",
+        "as_a": "user",
+        "i_want": "to read the selected message and its metadata",
+        "so_that": "I can understand its content and context",
+        "acceptance_criteria": [
+          "Message metadata is displayed",
+          "Message body is displayed safely"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "FR-013",
+          "FR-014",
+          "FR-015",
+          "FR-016"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "US-006",
+        "title": "Refresh email",
+        "as_a": "user",
+        "i_want": "to refresh the selected folder",
+        "so_that": "I can see current messages",
+        "acceptance_criteria": [
+          "Refresh is available",
+          "New server data is reflected"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "FR-018",
+          "NFR-004"
+        ],
+        "priority": "medium",
+        "status": "proposed"
+      },
+      {
+        "id": "US-007",
+        "title": "Protect email data",
+        "as_a": "user",
+        "i_want": "my email and credentials protected",
+        "so_that": "private information remains private",
+        "acceptance_criteria": [
+          "Credentials are protected",
+          "Message content is not unnecessarily exposed"
+        ],
+        "actor": "ACT-001",
+        "related_requirements": [
+          "NFR-001",
+          "NFR-002",
+          "NFR-006"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      }
+    ],
+    "use_cases": [
+      {
+        "id": "UC-001",
+        "name": "Read Message",
+        "goal": "Display a selected email safely and completely.",
+        "description": "The user selects a message and reads its metadata and body.",
+        "actors": [
+          "ACT-001",
+          "ACT-003"
+        ],
+        "trigger": "User selects a message",
+        "preconditions": [
+          "A folder is selected",
+          "Messages are loaded"
+        ],
+        "postconditions": [
+          "Selected message is displayed"
+        ],
+        "main_success_scenario": [
+          {
+            "id": "1",
+            "name": "Select message"
+          },
+          {
+            "id": "2",
+            "name": "Load message data"
+          },
+          {
+            "id": "3",
+            "name": "Sanitize body"
+          },
+          {
+            "id": "4",
+            "name": "Display metadata and body"
+          }
+        ],
+        "alternative_flows": [],
+        "exception_flows": [
+          {
+            "id": "E1",
+            "name": "Message unavailable",
+            "steps": [
+              "Show an error without exposing credentials or internal details"
+            ]
+          }
+        ],
+        "includes": [],
+        "extends": [],
+        "generalizes": [],
+        "related_requirements": [
+          "FR-013",
+          "FR-014",
+          "FR-015",
+          "FR-016"
+        ],
+        "acceptance_criteria": [
+          "Selected message is readable",
+          "HTML content is safely rendered"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "UC-002",
+        "name": "Sort Messages",
+        "goal": "Present messages in a user-selected order.",
+        "description": "The user sorts the current message list by DATE, FROM or SUBJECT.",
+        "actors": [
+          "ACT-001",
+          "ACT-003"
+        ],
+        "trigger": "User chooses a sort attribute",
+        "preconditions": [
+          "Messages are loaded"
+        ],
+        "postconditions": [
+          "Message order reflects the selected attribute"
+        ],
+        "main_success_scenario": [
+          {
+            "id": "1",
+            "name": "Choose DATE, FROM or SUBJECT"
+          },
+          {
+            "id": "2",
+            "name": "Sort messages"
+          },
+          {
+            "id": "3",
+            "name": "Refresh grouped presentation"
+          }
+        ],
+        "alternative_flows": [],
+        "exception_flows": [],
+        "includes": [],
+        "extends": [],
+        "generalizes": [],
+        "related_requirements": [
+          "FR-005",
+          "FR-012"
+        ],
+        "acceptance_criteria": [
+          "All supported sort attributes produce deterministic ordering"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "UC-003",
+        "name": "Group Selected Messages",
+        "goal": "Summarize selected messages using FROM and SUBJECT groups.",
+        "description": "The system presents selected messages using nested FROM and SUBJECT groups with counts.",
+        "actors": [
+          "ACT-001",
+          "ACT-003"
+        ],
+        "trigger": "User selects multiple messages",
+        "preconditions": [
+          "Messages are loaded"
+        ],
+        "postconditions": [
+          "Selection summary and nested groups are displayed"
+        ],
+        "main_success_scenario": [
+          {
+            "id": "1",
+            "name": "Select multiple messages"
+          },
+          {
+            "id": "2",
+            "name": "Count selected messages"
+          },
+          {
+            "id": "3",
+            "name": "Determine distinct FROM values"
+          },
+          {
+            "id": "4",
+            "name": "Build FROM groups"
+          },
+          {
+            "id": "5",
+            "name": "Build SUBJECT groups"
+          },
+          {
+            "id": "6",
+            "name": "Display counts and values"
+          }
+        ],
+        "alternative_flows": [],
+        "exception_flows": [],
+        "includes": [],
+        "extends": [],
+        "generalizes": [],
+        "related_requirements": [
+          "FR-006",
+          "FR-007",
+          "FR-009",
+          "FR-010",
+          "FR-011"
+        ],
+        "acceptance_criteria": [
+          "Heading contains folder and selection statistics",
+          "Every group displays its count"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "UC-004",
+        "name": "Change Folder",
+        "goal": "Switch the message context to another mail folder.",
+        "description": "The user selects another folder and the system loads its messages.",
+        "actors": [
+          "ACT-001",
+          "ACT-002",
+          "ACT-003"
+        ],
+        "trigger": "User selects a folder",
+        "preconditions": [
+          "An email account is available"
+        ],
+        "postconditions": [
+          "Selected folder becomes active"
+        ],
+        "main_success_scenario": [
+          {
+            "id": "1",
+            "name": "Select folder"
+          },
+          {
+            "id": "2",
+            "name": "Load messages"
+          },
+          {
+            "id": "3",
+            "name": "Display message list"
+          }
+        ],
+        "alternative_flows": [],
+        "exception_flows": [
+          {
+            "id": "E1",
+            "name": "Folder cannot be loaded",
+            "steps": [
+              "Report the failure and keep the previous context where possible"
+            ]
+          }
+        ],
+        "includes": [],
+        "extends": [],
+        "generalizes": [],
+        "related_requirements": [
+          "FR-002",
+          "FR-003",
+          "FR-004",
+          "FR-018",
+          "NFR-004"
+        ],
+        "acceptance_criteria": [
+          "Folder changes are reflected in the message list"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      },
+      {
+        "id": "UC-005",
+        "name": "Configure Account",
+        "goal": "Make an email account available to the reader.",
+        "description": "An authorized user configures an email account and its connection settings.",
+        "actors": [
+          "ACT-001",
+          "ACT-002"
+        ],
+        "trigger": "User adds or edits an account",
+        "preconditions": [],
+        "postconditions": [
+          "Account configuration is available for use"
+        ],
+        "main_success_scenario": [
+          {
+            "id": "1",
+            "name": "Enter account settings"
+          },
+          {
+            "id": "2",
+            "name": "Validate connection"
+          },
+          {
+            "id": "3",
+            "name": "Store protected configuration"
+          }
+        ],
+        "alternative_flows": [],
+        "exception_flows": [
+          {
+            "id": "E1",
+            "name": "Connection fails",
+            "steps": [
+              "Show a clear connection error"
+            ]
+          }
+        ],
+        "includes": [],
+        "extends": [],
+        "generalizes": [],
+        "related_requirements": [
+          "FR-001",
+          "NFR-002"
+        ],
+        "acceptance_criteria": [
+          "Valid account can be configured",
+          "Credentials are protected"
+        ],
+        "priority": "high",
+        "status": "proposed"
+      }
+    ],
+    "actors": [
+      {
+        "id": "ACT-001",
+        "name": "Email User",
+        "description": "Person using the email reader to browse and read messages.",
+        "kind": "person",
+        "parent_actor": null
+      },
+      {
+        "id": "ACT-002",
+        "name": "Email Server",
+        "description": "External mail service providing accounts, folders and messages.",
+        "kind": "system",
+        "parent_actor": null
+      },
+      {
+        "id": "ACT-003",
+        "name": "Email Reader",
+        "description": "Application responsible for loading, organizing and displaying email.",
+        "kind": "system",
+        "parent_actor": null
+      }
+    ],
+    "traceability": [
+      {
+        "id": "TRACE-001",
+        "source_id": "US-001",
+        "target_id": "FR-004",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-002",
+        "source_id": "US-002",
+        "target_id": "FR-005",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-003",
+        "source_id": "US-003",
+        "target_id": "FR-006",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-004",
+        "source_id": "US-003",
+        "target_id": "FR-007",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-005",
+        "source_id": "US-004",
+        "target_id": "FR-008",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-006",
+        "source_id": "US-004",
+        "target_id": "FR-009",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-007",
+        "source_id": "US-005",
+        "target_id": "FR-013",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-008",
+        "source_id": "US-005",
+        "target_id": "FR-016",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-009",
+        "source_id": "UC-003",
+        "target_id": "FR-010",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-010",
+        "source_id": "UC-003",
+        "target_id": "FR-011",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-011",
+        "source_id": "US-007",
+        "target_id": "NFR-001",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-012",
+        "source_id": "US-007",
+        "target_id": "NFR-002",
+        "relation": "satisfies"
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 let schema={},spec=null,selectedType="Requirements",rows=[],tooltipTimer=null,tooltipMode="short";
 const $=id=>document.getElementById(id),container=$("tableContainer"),message=$("message"),tooltip=$("tooltip"),filter=$("filter");
-const label=name=>name.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
+const label=name=>name.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());\n$("newProjectButton").addEventListener("click",newProject);
 const definition=()=>schema[selectedType];
 
 async function loadProjectSpec(path){

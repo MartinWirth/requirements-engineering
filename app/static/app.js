@@ -94,9 +94,8 @@ async function loadTable(){
   const response=await fetch(definition().endpoint);
   if(!response.ok)return showError("Could not load "+selectedType+".");
   rows=await response.json();
-  if(selectedType==="Requirements"&&spec?.functional_requirements){
-    rows=spec.functional_requirements.map(r=>({id:r.id,title:r.title,statement:r.shall,type:"functional",status:"draft",priority:r.priority,source:"project specification"}));
-  }
+  const key={Requirements:"requirements","User Stories":"user_stories","Use Cases":"use_cases",Actors:"actors",Traceability:"traceability"}[selectedType];
+  if(key&&spec?.project_data?.[key])rows=spec.project_data[key];
   setActiveNav();renderTable();
 }
 function showMessage(text){if(message){message.textContent=text;message.className="success"}}function showError(text){if(message){message.textContent=text;message.className="error"}else console.error(text)}

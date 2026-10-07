@@ -7,8 +7,9 @@
 </head>
 <body>
 <header>
-  <div class="header-main"><strong>Requirements Engineering Workbench</strong><span id="message"></span></div>
-  <div class="header-tools"><label for="tooltipMode">Tooltip type:</label><select id="tooltipMode" title="Tooltip type">
+  <div class="header-main"><strong>Requirements Engineering Workbench</strong><div class="header-selects"><label for="modelSelect">Model:</label><select id="modelSelect">
+    <option>Requirements</option><option>User Stories</option><option>Use Cases</option><option>Actors</option><option>Traceability</option>
+  </select><label for="tooltipMode">Tooltip type:</label><select id="tooltipMode" title="Tooltip type">
     <option value="full">Full + dependencies</option>
     <option value="api">API call</option>
     <option value="short">Short + IREB</option>

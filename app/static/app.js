@@ -136,6 +136,59 @@ async function generate(row){
   filter.value="";
   await loadTable();
 }
+async function renderTraceability(){
+  container.replaceChildren();
+  const endpoints={
+    requirements:"/api/requirements",
+    work_items:"/api/work-items",
+    test_cases:"/api/test-cases",
+    traceability:"/api/traceability"
+  };
+  const data={};
+  for(const [key,url] of Object.entries(endpoints)){
+    const response=await fetch(url);
+    if(!response.ok)throw Error("Could not load traceability data: "+key);
+    data[key]=await response.json();
+    const specRows=spec?.project_data?.[key]||[];
+    const ids=new Set(data[key].map(item=>item.id));
+    data[key]=[...specRows.filter(item=>!ids.has(item.id)),...data[key]];
+  }
+  const requirements=data.requirements;
+  const workItems=data.work_items;
+  const tests=data.test_cases;
+  const links=data.traceability;
+  const byId=new Map([...requirements,...workItems,...tests].map(item=>[item.id,item]));
+  const linked=(source,relation)=>links.filter(link=>link.source_id===source&&link.relation===relation).map(link=>byId.get(link.target_id)).filter(Boolean);
+  const workForRequirement=req=>workItems.filter(item=>(item.requirement_ids||[]).includes(req.id));
+  const testsForRequirement=req=>tests.filter(test=>(test.requirement_ids||[]).includes(req.id)||linked(test.id,"verifies").some(target=>target.id===req.id));
+  const statusClass=status=>({passed:"passed",failed:"failed",blocked:"blocked",done:"passed",in_review:"review",in_progress:"review"}[String(status||"").toLowerCase()]||"pending");
+  const table=document.createElement("table"),head=table.createTHead().insertRow();
+  ["Requirement","Issue","Task","Subtask","Test Case","Test Status"].forEach(name=>{const th=document.createElement("th");th.textContent=name;head.append(th)});
+  const body=table.createTBody();
+  requirements.forEach(req=>{
+    const items=workForRequirement(req),issue=items.find(item=>item.type==="issue"),task=items.find(item=>item.type==="task"),subtask=items.find(item=>item.type==="subtask");
+    const cases=testsForRequirement(req);
+    const tr=body.insertRow();
+    const cell=(value,detail="")=>{const td=tr.insertCell();td.textContent=value||"—";if(detail){const small=document.createElement("div");small.className="trace-detail";small.textContent=detail;td.append(small)}return td};
+    cell(req.id,req.title);
+    cell(issue?issue.id+" · "+issue.title:"—",issue?issue.status:"");
+    cell(task?task.id+" · "+task.title:"—",task?task.status:"");
+    cell(subtask?subtask.id+" · "+subtask.title:"—",subtask?subtask.status:"");
+    if(cases.length){
+      const td=tr.insertCell();
+      cases.forEach((test,index)=>{if(index)td.append(document.createElement("hr"));const strong=document.createElement("strong");strong.textContent=test.id+" · "+test.title;td.append(strong);if(test.steps?.length){const details=document.createElement("div");details.className="trace-detail";details.textContent=test.steps.length+" test step(s)";td.append(details)}});
+      const statusTd=tr.insertCell();
+      cases.forEach((test,index)=>{if(index)statusTd.append(document.createElement("hr"));const status=document.createElement("span");status.className="trace-status "+statusClass(test.status);status.textContent=String(test.status||"draft").toUpperCase();statusTd.append(status)});
+    }else{cell("—");cell("NOT CREATED")}
+  });
+  if(!requirements.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=6;td.className="empty";td.textContent="No requirements found."}
+  container.append(table);
+  const summary=document.createElement("p");summary.className="trace-summary";
+  const covered=requirements.filter(req=>testsForRequirement(req).length).length;
+  const verified=requirements.filter(req=>testsForRequirement(req).some(test=>String(test.status).toLowerCase()==="passed")).length;
+  summary.textContent=requirements.length+" requirements · "+covered+" with test cases · "+verified+" with a passing test";
+  container.prepend(summary);
+}
 function renderTable(){
   container.replaceChildren();const def=definition(),table=document.createElement("table"),thead=table.createTHead(),head=thead.insertRow(),actionTh=document.createElement("th");actionTh.textContent="Action";head.append(actionTh);def.fields.forEach(field=>{const th=document.createElement("th");addHeaderTooltip(th,field);head.append(th)});
   const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));if(selectedType==="Requirements"){const gen=button("Develop & Test");gen.onclick=()=>generate(row);action.append(gen)}if(selectedType==="Work Items"){const ai=button("AI Execute");ai.onclick=()=>aiExecute(row);action.append(ai);if(row.ai_branch&&row.ai_commit&&!row.ai_pr_url){const publish=button("Publish PR");publish.onclick=()=>publishPR(row);action.append(publish)}}if(selectedType==="Test Cases"){const run=button("Run");run.onclick=()=>runTest(row);action.append(run);const execute=button("Record");execute.onclick=()=>executeTest(row);action.append(execute)}modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});

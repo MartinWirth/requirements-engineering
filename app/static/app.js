@@ -29,22 +29,8 @@ async function newProject(){
   filter.value="";await loadTable();showMessage("Project specification created.");
 }
 
-async function loadAIModels(){
-  const response=await fetch("/api/ai-config");
-  if(!response.ok)throw Error("AI model configuration could not be loaded.");
-  const config=await response.json(),select=$("aiModelSelect");
-  select.replaceChildren(...config.models.map(model=>new Option(model.label,model.id)));
-  select.value=config.model;
-  select.onchange=async()=>{
-    const r=await fetch("/api/ai-config",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:select.value})});
-    const d=await r.json().catch(()=>({}));
-    if(!r.ok)return showError(d.detail||"AI model could not be changed.");
-    showMessage("AI model: "+select.value);
-  };
-}
 async function init(){
   await loadProjects();
-  await loadAIModels();
   const response=await fetch("/api/schema");
   if(!response.ok)throw Error("Model schema could not be loaded.");
   schema=await response.json();

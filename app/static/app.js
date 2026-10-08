@@ -117,7 +117,7 @@ async function publishPR(row){
   showMessage(row.id+" published: "+(result.github?.url||"pull request created"));await loadTable();
 }
 async function generate(row){
-  const response=await fetch("/api/requirements/"+encodeURIComponent(row.id)+"/generate",{method:"POST"});
+  const response=await fetch("/api/requirements/"+encodeURIComponent(row.id)+"/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requirement:row})});
   const result=await response.json().catch(()=>({}));
   if(!response.ok)return showError(result.detail||"Generation failed");
   const issue=result.issue?.id||"issue",task=result.task?.id||"task",subtask=result.subtask?.id||result.work_item?.id||"subtask",test=result.test_case?.id||"test";

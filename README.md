@@ -86,3 +86,17 @@ This project is an independent software implementation and is not an IREB-certif
 
 - https://cpre.ireb.org/en/downloads-and-resources/downloads
 - https://cpre.ireb.org/en/concept/requirements-modeling
+
+## Development and testing workflow
+
+Requirements are now connected to implementation work and verification:
+
+`Requirement -> Issue/Task -> Subtask -> Test Case -> Passed/Failed`
+
+- **Work Items** provides Jira-style `Issue`, `Task` and `Subtask` types.
+- A **Subtask** requires a `parent_id`; work items can link to one or more `requirement_ids`.
+- **Test Cases** link requirements and work items and record steps, expected results, status and actual results.
+- Use **Traceability** for explicit `satisfies` and `verifies` relationships.
+- The API endpoints are `/api/work-items` and `/api/test-cases`.
+
+This gives a compact development loop: select a requirement, create implementation work, split it into subtasks, implement it, then create and execute a linked test case.

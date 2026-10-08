@@ -15,6 +15,7 @@ from .gui import create_gui_router
 from .resources import RESOURCES
 from .ui import model_schema
 from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType\nfrom .ai import AIExecutionError, apply_changes, commit_changes, execute_work_item
+from .github import GitHubIntegrationError, publish_branch
 
 app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
               description="API-driven Requirements Engineering GUI server.")
@@ -197,3 +198,29 @@ def ai_execute_work_item(work_item_id: str):
         work_item.ai_executed_at = datetime.now(timezone.utc).isoformat()
         store.update("work_items", work_item)
         raise HTTPException(500, "AI development execution failed") from exc
+
+
+@app.post("/api/work-items/{work_item_id}/publish")
+def publish_work_item(work_item_id: str):
+    work_item = store.get("work_items", WorkItem, work_item_id)
+    if not work_item:
+        raise HTTPException(404, "Work item not found")
+    if not work_item.ai_branch or not work_item.ai_commit:
+        raise HTTPException(400, "Work item has no AI branch and commit to publish")
+    try:
+        result = publish_branch(
+            root=Path(__file__).parent.parent.resolve(),
+            branch=work_item.ai_branch,
+            title=f"AI implementation: {work_item.title}",
+            body=(
+                f"Automated AI implementation for Work Item {work_item.id}.\\n\\n"
+                f"AI summary:\\n{work_item.ai_summary or '(none)'}\\n\\n"
+                f"Commit: {work_item.ai_commit}"
+            ),
+        )
+        work_item.ai_pr_url = result["url"]
+        work_item.ai_pushed_at = datetime.now(timezone.utc).isoformat()
+        store.update("work_items", work_item)
+        return {"work_item": work_item, "github": result}
+    except GitHubIntegrationError as exc:
+        raise HTTPException(502, str(exc)) from exc

@@ -23,3 +23,15 @@ button{padding:7px 12px;cursor:pointer;border:1px solid #b8c2cc;border-radius:4p
 .trace-status.blocked{background:#fef3c7;color:#92400e}
 .trace-status.review{background:#dbeafe;color:#1e40af}
 .trace-status.pending{background:#f1f5f9;color:#475467}
+
+/* Scrollable data lists with draggable column boundaries */
+#tableContainer{width:100%;max-height:calc(100vh - 205px);overflow:auto;resize:vertical;border:1px solid #d8dee6;background:#fff}
+#tableContainer table{table-layout:fixed;min-width:100%;width:max-content}
+#tableContainer th,#tableContainer td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tableContainer th{position:sticky;top:0;z-index:2;padding-right:14px}
+#tableContainer th.resizable-header{position:sticky}
+#tableContainer .column-resizer{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;touch-action:none;z-index:3}
+#tableContainer .column-resizer:hover,#tableContainer .column-resizer:active{background:#94a3b8}
+#tableContainer td.action-cell{overflow:visible;text-overflow:clip}
+#tableContainer td.action-cell button{margin:1px}
+#tableContainer .trace-detail{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

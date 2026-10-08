@@ -109,6 +109,22 @@
       "title": "Health check",
       "shall": "provide a health endpoint",
       "priority": "must"
+    },
+    {
+      "id": "FR-017",
+      "shall": "manage Jira-style Issue, Task and Subtask work items"
+    },
+    {
+      "id": "FR-018",
+      "shall": "link work items to requirements"
+    },
+    {
+      "id": "FR-019",
+      "shall": "manage test cases linked to requirements and work items"
+    },
+    {
+      "id": "FR-020",
+      "shall": "record test execution status and actual results"
     }
   ],
   "domain_models": {
@@ -346,7 +362,9 @@
       "domain model unit tests",
       "persistence tests",
       "REST API tests",
-      "GUI behavior tests"
+      "GUI behavior tests",
+      "development work-item tests",
+      "test-case execution"
     ],
     "acceptance": "A requirement is accepted when its specified behavior is implemented and covered by an appropriate verification test."
   },
@@ -360,7 +378,9 @@
       "change requests",
       "baselines",
       "review and validation records",
-      "test-case traceability"
+      "test-case traceability",
+      "sprint planning and backlog views",
+      "automated test execution integration"
     ]
   },
   "project_data": {
@@ -661,6 +681,42 @@
         "status": "draft",
         "priority": "must",
         "source": "project specification"
+      },
+      {
+        "id": "FR-017",
+        "title": "Manage development work",
+        "statement": "create, read, update and list Jira-style Issues, Tasks and Subtasks",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
+      },
+      {
+        "id": "FR-018",
+        "title": "Link work to requirements",
+        "statement": "link development work items to one or more requirements",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
+      },
+      {
+        "id": "FR-019",
+        "title": "Manage test cases",
+        "statement": "create, read, update and list test cases linked to requirements and work items",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
+      },
+      {
+        "id": "FR-020",
+        "title": "Execute verification workflow",
+        "statement": "use test case status and actual results to verify implemented requirements",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
       }
     ],
     "user_stories": [
@@ -928,6 +984,77 @@
         "source_id": "FR-007",
         "target_id": "FR-001",
         "relation": "depends_on"
+      },
+      {
+        "id": "TRACE-009",
+        "source_id": "WI-001",
+        "target_id": "FR-017",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-010",
+        "source_id": "TEST-001",
+        "target_id": "FR-017",
+        "relation": "verifies"
+      },
+      {
+        "id": "TRACE-011",
+        "source_id": "TEST-001",
+        "target_id": "WI-001",
+        "relation": "verifies"
+      }
+    ],
+    "work_items": [
+      {
+        "id": "WI-001",
+        "title": "Implement requirement",
+        "description": "Development work derived from a requirement.",
+        "type": "task",
+        "status": "todo",
+        "priority": "high",
+        "parent_id": null,
+        "requirement_ids": [
+          "FR-017"
+        ],
+        "assignee": "",
+        "acceptance_criteria": [
+          "Implementation satisfies the linked requirement"
+        ]
+      },
+      {
+        "id": "WI-002",
+        "title": "Example subtask",
+        "description": "Break implementation into a concrete coding step.",
+        "type": "subtask",
+        "status": "todo",
+        "priority": "medium",
+        "parent_id": "WI-001",
+        "requirement_ids": [
+          "FR-017"
+        ],
+        "assignee": "",
+        "acceptance_criteria": []
+      }
+    ],
+    "test_cases": [
+      {
+        "id": "TEST-001",
+        "title": "Verify implemented requirement",
+        "description": "Functional verification of a completed work item.",
+        "status": "ready",
+        "requirement_ids": [
+          "FR-017"
+        ],
+        "work_item_ids": [
+          "WI-001"
+        ],
+        "steps": [
+          "Execute the implemented feature"
+        ],
+        "expected_results": [
+          "Expected requirement behavior is observed"
+        ],
+        "actual_result": ""
       }
     ]
   }

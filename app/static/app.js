@@ -94,7 +94,7 @@ async function loadTable(){
   const response=await fetch(definition().endpoint);
   if(!response.ok)return showError("Could not load "+selectedType+".");
   rows=await response.json();
-  const key={Requirements:"requirements","User Stories":"user_stories","Use Cases":"use_cases",Actors:"actors",Traceability:"traceability"}[selectedType];
+  const key={Requirements:"requirements","User Stories":"user_stories","Use Cases":"use_cases",Actors:"actors",Traceability:"traceability","Work Items":"work_items","Test Cases":"test_cases"}[selectedType];
   if(key&&spec?.project_data?.[key])rows=spec.project_data[key];
   setActiveNav();renderTable();
 }

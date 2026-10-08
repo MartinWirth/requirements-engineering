@@ -4,7 +4,7 @@ from typing import Any, get_args, get_origin, get_type_hints
 from pydantic import BaseModel
 from pydantic_core import PydanticUndefined
 
-from .models import Actor, Requirement, TraceLink, UseCase, UserStory
+from .models import Actor, Requirement, TestCase, TraceLink, UseCase, UserStory, WorkItem
 
 
 IREB_GLOSSARY = "https://cpre.ireb.org/en/downloads-and-resources/glossary"
@@ -48,6 +48,13 @@ FIELD_HELP: dict[str, tuple[str, str]] = {
     "source_id": ("Source element of a traceability link.", IREB_DOWNLOADS),
     "target_id": ("Target element of a traceability link.", IREB_DOWNLOADS),
     "relation": ("Semantics of the traceability relationship.", IREB_DOWNLOADS),
+    "parent_id": ("Parent Issue or Task for a Subtask.", IREB_DOWNLOADS),
+    "requirement_ids": ("Requirements implemented or verified by this element.", IREB_DOWNLOADS),
+    "work_item_ids": ("Development work items covered by this test.", IREB_DOWNLOADS),
+    "assignee": ("Person responsible for implementation.", IREB_DOWNLOADS),
+    "steps": ("Actions performed during the test.", IREB_DOWNLOADS),
+    "expected_results": ("Expected result for each test step.", IREB_DOWNLOADS),
+    "actual_result": ("Observed result from the latest test execution.", IREB_DOWNLOADS),
 }
 
 MODEL_DEFINITIONS = {
@@ -56,6 +63,8 @@ MODEL_DEFINITIONS = {
     "Use Cases": (UseCase, "/api/use-cases"),
     "Actors": (Actor, "/api/actors"),
     "Traceability": (TraceLink, "/api/traceability"),
+    "Work Items": (WorkItem, "/api/work-items"),
+    "Test Cases": (TestCase, "/api/test-cases"),
 }
 
 

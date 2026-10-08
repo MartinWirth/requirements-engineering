@@ -152,17 +152,15 @@ class AIModelSelection(BaseModel):
 
 
 AI_MODELS = [
-    {"id": "qwen/qwen2.5-coder-32b-instruct", "label": "Qwen 2.5 Coder 32B — coding"},
-    {"id": "meta/llama-3.3-70b-instruct", "label": "Llama 3.3 70B — general"},
-    {"id": "qwen/qwen3-next-80b-a3b-instruct", "label": "Qwen3 Next 80B A3B — reasoning"},
+    {"id": "poolside/laguna-xs-2.1", "label": "Poolside Laguna XS 2.1 — coding"},
 ]
 
 
 @app.get("/api/ai-config")
 def get_ai_config():
     import os
-    model = os.getenv("AI_MODEL", "qwen/qwen2.5-coder-32b-instruct")
-    if model not in {item["id"] for item in AI_MODELS}:
+    model = os.getenv("AI_MODEL", "poolside/laguna-xs-2.1")
+    if model in {"qwen/qwen2.5-coder-32b-instruct", "qwen/qwen3-next-80b-a3b-instruct"} or model not in {item["id"] for item in AI_MODELS}:
         model = AI_MODELS[0]["id"]
         os.environ["AI_MODEL"] = model
     return {"model": model, "models": AI_MODELS}

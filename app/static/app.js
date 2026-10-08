@@ -85,6 +85,11 @@ async function saveRow(def,row,editors,isNew,saveButton){
   try{const url=isNew?def.endpoint:def.endpoint+"/"+encodeURIComponent(row.id),method=isNew?"POST":"PUT";const response=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(isNew?payload:{...payload,id:row.id})});if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(detail.detail||"Save failed")}showMessage(isNew?"Element created.":"Element updated.");await loadTable()}catch(error){showError(error.message);saveButton.disabled=false}
 }
 function renderCreate(){container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});const thead=table.createTHead();thead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));container.append(table)}
+async function runTest(row){
+  const response=await fetch("/api/test-cases/"+encodeURIComponent(row.id)+"/run",{method:"POST"});
+  if(!response.ok){const d=await response.json().catch(()=>({}));return showError(d.detail||"Test execution failed")}
+  const result=await response.json();showMessage(row.id+" executed: "+result.status+".");await loadTable();
+}
 async function executeTest(row){
   const actual=prompt("Actual result:",row.actual_result||"");
   if(actual===null)return;
@@ -103,7 +108,7 @@ async function generate(row){
 }
 function renderTable(){
   container.replaceChildren();const def=definition(),table=document.createElement("table"),thead=table.createTHead(),head=thead.insertRow(),actionTh=document.createElement("th");actionTh.textContent="Action";head.append(actionTh);def.fields.forEach(field=>{const th=document.createElement("th");addHeaderTooltip(th,field);head.append(th)});
-  const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));if(selectedType==="Requirements"){const gen=button("Develop & Test");gen.onclick=()=>generate(row);action.append(gen)}if(selectedType==="Test Cases"){const execute=button("Execute");execute.onclick=()=>executeTest(row);action.append(execute)}modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});
+  const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));if(selectedType==="Requirements"){const gen=button("Develop & Test");gen.onclick=()=>generate(row);action.append(gen)}if(selectedType==="Test Cases"){const run=button("Run");run.onclick=()=>runTest(row);action.append(run);const execute=button("Record");execute.onclick=()=>executeTest(row);action.append(execute)}modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});
   if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."}container.append(table);
 }
 async function loadTable(){

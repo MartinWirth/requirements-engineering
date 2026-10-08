@@ -85,6 +85,37 @@ async function saveRow(def,row,editors,isNew,saveButton){
   if(isNew&&["Issues","Tasks","Subtasks"].includes(selectedType))payload.type=selectedType.slice(0,-1).toLowerCase();let valid=true;editors.forEach(({field,editor,check})=>{const result=check();if(!result.ok)valid=false;else if(field.name!=="id"&&result.value!=null)payload[field.name]=result.value});if(!valid)return showError("Please correct the highlighted values.");saveButton.disabled=true;
   try{const url=isNew?def.endpoint:def.endpoint+"/"+encodeURIComponent(row.id),method=isNew?"POST":"PUT";const response=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(isNew?payload:{...payload,id:row.id})});if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(detail.detail||"Save failed")}showMessage(isNew?"Element created.":"Element updated.");await loadTable()}catch(error){showError(error.message);saveButton.disabled=false}
 }
+function setupResizableTable(table,headers){
+  table.classList.add("resizable-table");
+  const colgroup=document.createElement("colgroup");
+  headers.forEach((header,index)=>{
+    const col=document.createElement("col");
+    const text=typeof header==="string"?header:label(header.name);
+    col.style.width=(index===0?150:Math.max(64,text.length*8+28))+"px";
+    colgroup.append(col);
+  });
+  table.prepend(colgroup);
+  const headerCells=table.tHead?.rows[0]?.cells||[];
+  [...headerCells].forEach((th,index)=>{
+    th.classList.add("resizable-header");
+    const grip=document.createElement("span");
+    grip.className="column-resizer";
+    grip.setAttribute("role","separator");
+    grip.setAttribute("aria-orientation","vertical");
+    grip.setAttribute("aria-label","Resize "+(typeof headers[index]==="string"?headers[index]:label(headers[index]?.name||"column"))+" column");
+    grip.title="Drag to resize column";
+    grip.addEventListener("pointerdown",event=>{
+      if(event.button!==0)return;
+      event.preventDefault();event.stopPropagation();
+      const startX=event.clientX,startWidth=colgroup.children[index].getBoundingClientRect().width;
+      grip.setPointerCapture(event.pointerId);
+      const move=e=>{const width=Math.max(48,startWidth+e.clientX-startX);colgroup.children[index].style.width=width+"px";table.style.width="max-content"};
+      const stop=()=>{grip.removeEventListener("pointermove",move);grip.removeEventListener("pointerup",stop);grip.removeEventListener("pointercancel",stop);};
+      grip.addEventListener("pointermove",move);grip.addEventListener("pointerup",stop);grip.addEventListener("pointercancel",stop);
+    });
+    th.append(grip);
+  });
+}
 function renderCreate(){container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});const thead=table.createTHead();thead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));container.append(table)}
 async function runTest(row){
   const response=await fetch("/api/test-cases/"+encodeURIComponent(row.id)+"/run",{method:"POST"});
@@ -192,7 +223,7 @@ async function renderTraceability(){
 function renderTable(){
   container.replaceChildren();const def=definition(),table=document.createElement("table"),thead=table.createTHead(),head=thead.insertRow(),actionTh=document.createElement("th");actionTh.textContent="Action";head.append(actionTh);def.fields.forEach(field=>{const th=document.createElement("th");addHeaderTooltip(th,field);head.append(th)});
   const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));if(selectedType==="Requirements"){const gen=button("Develop & Test");gen.onclick=()=>generate(row);action.append(gen)}if(selectedType==="Work Items"){const ai=button("AI Execute");ai.onclick=()=>aiExecute(row);action.append(ai);if(row.ai_branch&&row.ai_commit&&!row.ai_pr_url){const publish=button("Publish PR");publish.onclick=()=>publishPR(row);action.append(publish)}}if(selectedType==="Test Cases"){const run=button("Run");run.onclick=()=>runTest(row);action.append(run);const execute=button("Record");execute.onclick=()=>executeTest(row);action.append(execute)}modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});
-  if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."}container.append(table);
+  if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."}setupResizableTable(table,["Action",...def.fields]);container.append(table);
 }
 async function loadTable(){
   const response=await fetch(definition().endpoint);

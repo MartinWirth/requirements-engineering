@@ -236,7 +236,7 @@ def run_test_case(test_case_id: str):
     test.actual_result = output
     test.executed_at = datetime.now(timezone.utc).isoformat()
     store.update("test_cases", test)
-    return {"action_run_id": action_run_id, "test_case": test}
+    return {**test.model_dump(), "action_run_id": action_run_id}
 
 
 class ProjectSpecCreate(BaseModel):

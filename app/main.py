@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pathlib import Path
 import json
 import re
+from datetime import datetime, timezone
 
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -75,6 +76,25 @@ def get_project_spec(path: str = Query(...)):
         return json.loads(spec.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(500, "Specification could not be loaded") from exc
+
+
+class TestExecution(BaseModel):
+    status: str
+    actual_result: str = ""
+
+
+@app.post("/api/test-cases/{test_case_id}/execute")
+def execute_test_case(test_case_id: str, execution: TestExecution):
+    test = store.get("test_cases", TestCase, test_case_id)
+    if not test:
+        raise HTTPException(404, "Test case not found")
+    if execution.status not in {"passed", "failed", "blocked"}:
+        raise HTTPException(400, "Execution status must be passed, failed, or blocked")
+    test.status = execution.status
+    test.actual_result = execution.actual_result
+    test.executed_at = datetime.now(timezone.utc).isoformat()
+    store.update("test_cases", test)
+    return test
 
 
 class ProjectSpecCreate(BaseModel):

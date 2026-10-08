@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "requirements-engineering-workbench-spec.json",
   "title": "Requirements Engineering Workbench Specification",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "status": "baseline",
   "description": "Baseline requirements for a local, API-first Requirements Engineering Workbench aligned with IREB CPRE terminology, including AI-assisted development and executable verification.",
   "architecture": {
@@ -13,7 +13,7 @@
     "frontend": "HTML/CSS/JavaScript",
     "interface": "REST API",
     "test_execution": "Configured local commands executed directly by the backend with timeout and captured output",
-    "ai_development": "Configured AI API receives a work item and repository context, returns structured file changes and test commands, and the backend applies changes only within the repository."
+    "ai_development": "Configured AI API receives a Work Item and repository context, returns structured file changes and test commands, and the backend applies changes only within the repository, creates a dedicated Git branch and commit, and records both."
   },
   "functional_requirements": [
     {
@@ -158,7 +158,8 @@
       "id": "FR-024",
       "title": "Execute development work with AI",
       "shall": "send a Work Item and relevant requirements to a configured AI API, apply returned repository changes, and record the AI execution result",
-      "priority": "must"
+      "priority": "must",
+      "statement": "send a Work Item and relevant requirements to a configured AI API, apply returned repository changes on a dedicated Git branch, create a Git commit, and record the AI execution result"
     }
   ],
   "domain_models": {
@@ -260,7 +261,9 @@
         "assignee",
         "acceptance_criteria",
         "ai_summary",
-        "ai_executed_at"
+        "ai_executed_at",
+        "ai_branch",
+        "ai_commit"
       ],
       "type_values": [
         "issue",
@@ -349,6 +352,21 @@
       "id": "API-010",
       "shall": "run returned test commands with a 60-second timeout and set the work item to done, in_review or blocked",
       "priority": "must"
+    },
+    {
+      "id": "API-011",
+      "shall": "create a dedicated Git branch for each successful AI development execution and commit the applied changes",
+      "priority": "must"
+    },
+    {
+      "id": "API-012",
+      "shall": "record the AI-created Git branch and commit on the Work Item",
+      "priority": "must"
+    },
+    {
+      "id": "API-013",
+      "shall": "refuse AI execution when the Git working tree contains pre-existing local changes",
+      "priority": "must"
     }
   ],
   "gui_requirements": [
@@ -399,6 +417,10 @@
     {
       "id": "GUI-012",
       "shall": "provide an AI Execute action for Work Items and display the resulting execution status"
+    },
+    {
+      "id": "GUI-013",
+      "shall": "display the Git branch and commit associated with an AI-executed Work Item"
     }
   ],
   "requirements_engineering_scope": {
@@ -495,7 +517,7 @@
       "automated Test Case command execution",
       "AI-assisted development execution"
     ],
-    "acceptance": "A requirement is accepted when its specified behavior is implemented and covered by an appropriate verification test. Automated verification may execute a configured local command and records its status, output and timestamp. AI development execution is successful when a configured AI API returns valid structured changes, those changes are confined to the repository, and configured tests determine the resulting work-item status."
+    "acceptance": "A requirement is accepted when its specified behavior is implemented and covered by an appropriate verification test. Automated verification may execute a configured local command and records its status, output and timestamp. AI development execution is successful when a configured AI API returns valid structured changes, those changes are confined to the repository, and configured tests determine the resulting work-item status. AI development execution is complete only when the applied implementation is committed on a dedicated Git branch and the Work Item records the branch and commit."
   },
   "future_requirements": {
     "status": "planned",
@@ -1215,7 +1237,9 @@
           "Implementation satisfies the linked requirement"
         ],
         "ai_summary": "",
-        "ai_executed_at": null
+        "ai_executed_at": null,
+        "ai_branch": "",
+        "ai_commit": ""
       },
       {
         "id": "WI-002",
@@ -1259,4 +1283,4 @@
       }
     ]
   }
-}\n
+}

@@ -95,7 +95,8 @@ function editorRow(def,row,isNew=false){
 }
 function button(text){const b=document.createElement("button");b.textContent=text;return b}
 async function saveRow(def,row,editors,isNew,saveButton){
-  const payload={};let valid=true;editors.forEach(({field,editor,check})=>{const result=check();if(!result.ok)valid=false;else if(field.name!=="id"&&result.value!=null)payload[field.name]=result.value});if(!valid)return showError("Please correct the highlighted values.");saveButton.disabled=true;
+  const payload={};
+  if(isNew&&["Issues","Tasks","Subtasks"].includes(selectedType))payload.type=selectedType.slice(0,-1).toLowerCase();let valid=true;editors.forEach(({field,editor,check})=>{const result=check();if(!result.ok)valid=false;else if(field.name!=="id"&&result.value!=null)payload[field.name]=result.value});if(!valid)return showError("Please correct the highlighted values.");saveButton.disabled=true;
   try{const url=isNew?def.endpoint:def.endpoint+"/"+encodeURIComponent(row.id),method=isNew?"POST":"PUT";const response=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(isNew?payload:{...payload,id:row.id})});if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(detail.detail||"Save failed")}showMessage(isNew?"Element created.":"Element updated.");await loadTable()}catch(error){showError(error.message);saveButton.disabled=false}
 }
 function renderCreate(){container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});const thead=table.createTHead();thead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));container.append(table)}
@@ -146,6 +147,8 @@ async function loadTable(){
   const response=await fetch(definition().endpoint);
   if(!response.ok)return showError("Could not load "+selectedType+".");
   rows=await response.json();
+  const workItemType={Issues:"issue",Tasks:"task",Subtasks:"subtask"}[selectedType];
+  if(workItemType)rows=rows.filter(row=>row.type===workItemType);
   const key={Requirements:"requirements","User Stories":"user_stories","Use Cases":"use_cases",Actors:"actors",Traceability:"traceability","Work Items":"work_items","Test Cases":"test_cases"}[selectedType];
   if(key&&spec?.project_data?.[key]){const base=spec.project_data[key],ids=new Set(rows.map(r=>r.id));rows=[...base.filter(r=>!ids.has(r.id)),...rows]}
   setActiveNav();renderTable();

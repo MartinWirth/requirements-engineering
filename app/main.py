@@ -3,7 +3,8 @@ from pathlib import Path
 import json
 import re
 import subprocess
-from datetime import datetime, timezone\n
+from datetime import datetime, timezone
+
 
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +15,8 @@ from .database import SQLiteStore
 from .gui import create_gui_router
 from .resources import RESOURCES
 from .ui import model_schema
-from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType\nfrom .ai import AIExecutionError, apply_changes, commit_changes, execute_work_item
+from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType
+from .ai import AIExecutionError, apply_changes, commit_changes, execute_work_item
 from .github import GitHubIntegrationError, publish_branch
 
 app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
@@ -115,8 +117,10 @@ def run_test_case(test_case_id: str):
         test.status, output = "blocked", f"Test execution could not start: {exc}"
     else:
         test.status = "passed" if result.returncode == 0 else "failed"
-        output = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
-        output = f"exit code: {result.returncode}\n{output}".strip()
+        output = (result.stdout + ("
+" + result.stderr if result.stderr else "")).strip()
+        output = f"exit code: {result.returncode}
+{output}".strip()
     test.actual_result = output
     test.executed_at = datetime.now(timezone.utc).isoformat()
     store.update("test_cases", test)
@@ -145,7 +149,8 @@ def create_project_spec(request: ProjectSpecCreate):
         spec = json.loads(template.read_text(encoding="utf-8"))
         spec["$id"] = filename
         spec["title"] = request.title.strip() or name.replace("-", " ").replace("_", " ").title()
-        target.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        target.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "
+", encoding="utf-8")
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(500, "Project specification could not be created") from exc
     return {"path": filename, "spec": spec}
@@ -173,11 +178,14 @@ def ai_execute_work_item(work_item_id: str):
                 continue
             try:
                 test = subprocess.run(command,cwd=root,capture_output=True,text=True,timeout=60,check=False)
-                output.append(f"$ {' '.join(command)}\nexit code: {test.returncode}\n{test.stdout}{test.stderr}".strip())
+                output.append(f"$ {' '.join(command)}
+exit code: {test.returncode}
+{test.stdout}{test.stderr}".strip())
                 if test.returncode != 0:
                     status = "in_review"
             except (OSError,subprocess.TimeoutExpired) as exc:
-                output.append(f"$ {' '.join(command)}\nblocked: {exc}")
+                output.append(f"$ {' '.join(command)}
+blocked: {exc}")
                 status = "blocked"
         work_item.status = status
         work_item.ai_summary = result.get("summary","")
@@ -185,7 +193,9 @@ def ai_execute_work_item(work_item_id: str):
         work_item.ai_branch = git_info["branch"]
         work_item.ai_commit = git_info["commit"]
         store.update("work_items", work_item)
-        return {"work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "\n\n".join(output)}
+        return {"work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "
+
+".join(output)}
     except AIExecutionError as exc:
         work_item.status = "blocked"
         work_item.ai_summary = str(exc)
@@ -213,8 +223,13 @@ def publish_work_item(work_item_id: str):
             branch=work_item.ai_branch,
             title=f"AI implementation: {work_item.title}",
             body=(
-                f"Automated AI implementation for Work Item {work_item.id}.\\n\\n"
-                f"AI summary:\\n{work_item.ai_summary or '(none)'}\\n\\n"
+                f"Automated AI implementation for Work Item {work_item.id}.\
+\
+"
+                f"AI summary:\
+{work_item.ai_summary or '(none)'}\
+\
+"
                 f"Commit: {work_item.ai_commit}"
             ),
         )

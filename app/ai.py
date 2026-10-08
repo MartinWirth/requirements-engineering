@@ -4,6 +4,8 @@ import json
 import os
 import urllib.error
 import urllib.request
+import subprocess
+import re
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +86,29 @@ def execute_work_item(work_item: dict[str, Any], requirements: list[dict[str, An
     if not isinstance(result,dict) or not isinstance(result.get("files"),list):
         raise AIExecutionError("AI response must contain a files list")
     return result
+
+
+
+def commit_changes(root: Path, changed: list[str], work_item_id: str, title: str) -> dict[str, str]:
+    def git(*args: str) -> str:
+        result = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=30, check=False)
+        if result.returncode:
+            raise AIExecutionError(result.stderr.strip() or f"git {' '.join(args)} failed")
+        return result.stdout.strip()
+
+    if git("status", "--porcelain"):
+        raise AIExecutionError("Git working tree is not clean; AI execution will not overwrite existing local changes.")
+    branch = f"ai/{work_item_id}-{re.sub(r'[^A-Za-z0-9_-]+', '-', title).strip('-')[:50]}"
+    existing = subprocess.run(["git", "rev-parse", "--verify", branch], cwd=root, capture_output=True, text=True, check=False)
+    if existing.returncode == 0:
+        branch += "-2"
+    git("switch", "-c", branch)
+    git("add", "--", *changed)
+    staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=root, capture_output=True, text=True, check=False)
+    if staged.returncode == 0:
+        raise AIExecutionError("AI execution produced no Git changes.")
+    git("commit", "-m", f"AI implement {work_item_id}: {title}")
+    return {"branch": branch, "commit": git("rev-parse", "HEAD")}
 
 
 def apply_changes(root: Path, result: dict[str, Any]) -> list[str]:

@@ -125,6 +125,14 @@
     {
       "id": "FR-020",
       "shall": "record test execution status and actual results"
+    },
+    {
+      "id": "FR-021",
+      "shall": "generate implementation work and a verification test from a requirement"
+    },
+    {
+      "id": "FR-022",
+      "shall": "automatically create trace links for generated development and test elements"
     }
   ],
   "domain_models": {
@@ -354,7 +362,8 @@
       "includes",
       "extends",
       "generalizes",
-      "related_to"
+      "related_to",
+      "verifies"
     ]
   },
   "verification": {
@@ -717,6 +726,24 @@
         "status": "draft",
         "priority": "must",
         "source": "project specification"
+      },
+      {
+        "id": "FR-021",
+        "title": "Generate development workflow",
+        "statement": "generate an implementation Task and verification Test Case from a requirement",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
+      },
+      {
+        "id": "FR-022",
+        "title": "Trace generated workflow",
+        "statement": "automatically link generated work and tests to the source requirement",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
       }
     ],
     "user_stories": [
@@ -1001,6 +1028,18 @@
         "id": "TRACE-011",
         "source_id": "TEST-001",
         "target_id": "WI-001",
+        "relation": "verifies"
+      },
+      {
+        "id": "TRACE-012",
+        "source_id": "WI-001",
+        "target_id": "FR-021",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-013",
+        "source_id": "TEST-001",
+        "target_id": "FR-021",
         "relation": "verifies"
       }
     ],

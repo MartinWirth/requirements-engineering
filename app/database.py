@@ -21,6 +21,8 @@ class SQLiteStore:
         "use_cases": "use_cases",
         "actors": "actors",
         "trace_links": "trace_links",
+        "work_items": "work_items",
+        "test_cases": "test_cases",
     }
 
     def __init__(self, database_path: str | Path = "data/requirements.db") -> None:

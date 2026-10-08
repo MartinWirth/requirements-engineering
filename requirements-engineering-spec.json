@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "requirements-engineering-workbench-spec.json",
   "title": "Requirements Engineering Workbench Specification",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "status": "baseline",
-  "description": "Baseline requirements for a local, API-first Requirements Engineering Workbench aligned with IREB CPRE terminology, including AI-assisted development and executable verification.",
+  "description": "Baseline requirements for a local, API-first Requirements Engineering Workbench aligned with IREB CPRE terminology, including AI-assisted development, executable verification, and GitHub pull request publication.",
   "architecture": {
     "runtime": "Python 3.12+",
     "backend": "FastAPI",
@@ -13,7 +13,7 @@
     "frontend": "HTML/CSS/JavaScript",
     "interface": "REST API",
     "test_execution": "Configured local commands executed directly by the backend with timeout and captured output",
-    "ai_development": "Configured AI API receives a Work Item and repository context, returns structured file changes and test commands, and the backend applies changes only within the repository, creates a dedicated Git branch and commit, and records both."
+    "ai_development": "Configured AI API receives a Work Item and repository context, returns structured file changes and test commands, and the backend applies changes only within the repository, creates a dedicated Git branch and commit, and records both. A separate publication action pushes the branch and creates a GitHub pull request."
   },
   "functional_requirements": [
     {
@@ -160,6 +160,12 @@
       "shall": "send a Work Item and relevant requirements to a configured AI API, apply returned repository changes, and record the AI execution result",
       "priority": "must",
       "statement": "send a Work Item and relevant requirements to a configured AI API, apply returned repository changes on a dedicated Git branch, create a Git commit, and record the AI execution result"
+    },
+    {
+      "id": "FR-025",
+      "title": "Publish AI development",
+      "shall": "publish a successful AI implementation branch to GitHub and create a pull request against the configured base branch",
+      "priority": "must"
     }
   ],
   "domain_models": {
@@ -263,7 +269,9 @@
         "ai_summary",
         "ai_executed_at",
         "ai_branch",
-        "ai_commit"
+        "ai_commit",
+        "ai_pr_url",
+        "ai_pushed_at"
       ],
       "type_values": [
         "issue",
@@ -367,6 +375,16 @@
       "id": "API-013",
       "shall": "refuse AI execution when the Git working tree contains pre-existing local changes",
       "priority": "must"
+    },
+    {
+      "id": "API-014",
+      "shall": "push an AI-created Git branch to the configured GitHub repository",
+      "priority": "must"
+    },
+    {
+      "id": "API-015",
+      "shall": "create a GitHub pull request for the published AI branch and record its URL and publication timestamp on the Work Item",
+      "priority": "must"
     }
   ],
   "gui_requirements": [
@@ -421,6 +439,10 @@
     {
       "id": "GUI-013",
       "shall": "display the Git branch and commit associated with an AI-executed Work Item"
+    },
+    {
+      "id": "GUI-014",
+      "shall": "provide a Publish PR action for an AI-executed Work Item without an existing pull request"
     }
   ],
   "requirements_engineering_scope": {
@@ -903,6 +925,15 @@
         "status": "draft",
         "priority": "must",
         "source": "project specification"
+      },
+      {
+        "id": "FR-025",
+        "title": "Publish AI development",
+        "statement": "publish a successful AI implementation branch to GitHub and create a pull request against the configured base branch",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
       }
     ],
     "user_stories": [
@@ -1239,7 +1270,9 @@
         "ai_summary": "",
         "ai_executed_at": null,
         "ai_branch": "",
-        "ai_commit": ""
+        "ai_commit": "",
+        "ai_pr_url": "",
+        "ai_pushed_at": null
       },
       {
         "id": "WI-002",

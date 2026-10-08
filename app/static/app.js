@@ -108,6 +108,13 @@ async function aiExecute(row){
   if(!response.ok)return showError(result.detail||"AI execution failed");
   showMessage(row.id+" AI execution: "+result.work_item.status+" ("+(result.changed_files||[]).length+" files changed).");await loadTable();
 }
+async function publishPR(row){
+  if(!confirm("Push branch "+row.ai_branch+" to GitHub and create a pull request?"))return;
+  const response=await fetch("/api/work-items/"+encodeURIComponent(row.id)+"/publish",{method:"POST"});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)return showError(result.detail||"GitHub publication failed");
+  showMessage(row.id+" published: "+(result.github?.url||"pull request created"));await loadTable();
+}
 async function generate(row){
   const response=await fetch("/api/requirements/"+encodeURIComponent(row.id)+"/generate",{method:"POST"});
   if(!response.ok){const d=await response.json().catch(()=>({}));return showError(d.detail||"Generation failed")}
@@ -115,7 +122,7 @@ async function generate(row){
 }
 function renderTable(){
   container.replaceChildren();const def=definition(),table=document.createElement("table"),thead=table.createTHead(),head=thead.insertRow(),actionTh=document.createElement("th");actionTh.textContent="Action";head.append(actionTh);def.fields.forEach(field=>{const th=document.createElement("th");addHeaderTooltip(th,field);head.append(th)});
-  const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));if(selectedType==="Requirements"){const gen=button("Develop & Test");gen.onclick=()=>generate(row);action.append(gen)}if(selectedType==="Work Items"){const ai=button("AI Execute");ai.onclick=()=>aiExecute(row);action.append(ai)}if(selectedType==="Test Cases"){const run=button("Run");run.onclick=()=>runTest(row);action.append(run);const execute=button("Record");execute.onclick=()=>executeTest(row);action.append(execute)}modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});
+  const body=table.createTBody(),visible=visibleRows();visible.forEach(row=>{const tr=body.insertRow(),action=tr.insertCell();action.className="action-cell";const modify=button("Modify");modify.onclick=()=>tr.replaceWith(editorRow(def,row));if(selectedType==="Requirements"){const gen=button("Develop & Test");gen.onclick=()=>generate(row);action.append(gen)}if(selectedType==="Work Items"){const ai=button("AI Execute");ai.onclick=()=>aiExecute(row);action.append(ai);if(row.ai_branch&&row.ai_commit&&!row.ai_pr_url){const publish=button("Publish PR");publish.onclick=()=>publishPR(row);action.append(publish)}}if(selectedType==="Test Cases"){const run=button("Run");run.onclick=()=>runTest(row);action.append(run);const execute=button("Record");execute.onclick=()=>executeTest(row);action.append(execute)}modify.onmouseenter=e=>actionTooltip(e,"Modify",def,row);modify.onmousemove=moveTooltip;modify.onmouseleave=scheduleHide;action.append(modify);def.fields.forEach(field=>{const td=tr.insertCell(),value=row[field.name];td.textContent=typeof value==="object"?JSON.stringify(value):value??"";if(field.name==="id")td.className="id-cell"});tr.ondblclick=()=>tr.replaceWith(editorRow(def,row))});
   if(!visible.length){const tr=body.insertRow(),td=tr.insertCell();td.colSpan=def.fields.length+1;td.className="empty";td.textContent="No elements."}container.append(table);
 }
 async function loadTable(){

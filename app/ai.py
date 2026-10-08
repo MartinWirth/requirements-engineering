@@ -27,7 +27,7 @@ def _project_files(root: Path, limit: int = 60000) -> str:
     chunks=[]
     total=0
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or any(part in ignored for part in path.parts) or path.suffix.lower() not in allowed:
+        if not path.is_file() or any(part in ignored or part==".git" for part in path.parts) or path.suffix.lower() not in allowed:
             continue
         try:
             content=path.read_text(encoding="utf-8")
@@ -92,7 +92,7 @@ def apply_changes(root: Path, result: dict[str, Any]) -> list[str]:
         if not isinstance(item,dict) or not isinstance(item.get("path"),str) or not isinstance(item.get("content"),str):
             raise AIExecutionError("AI returned an invalid file change")
         target=(root/item["path"]).resolve()
-        if root not in target.parents or target.name==".git":
+        if root not in target.parents or any(part==".git" for part in target.parts):
             raise AIExecutionError(f"AI attempted to write outside the repository: {item['path']}")
         target.parent.mkdir(parents=True,exist_ok=True)
         target.write_text(item["content"],encoding="utf-8")

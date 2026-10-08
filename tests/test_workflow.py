@@ -57,3 +57,48 @@ def test_generated_workflow_hierarchy():
     assert task.parent_id == issue.id
     assert subtask.parent_id == task.id
     assert case.work_item_ids == [subtask.id]
+
+
+def test_build_test_case_content_uses_acceptance_criteria():
+    from app.main import build_test_case_content
+    from app.models import Requirement, RequirementType
+
+    requirement = Requirement(
+        id="REQ-1",
+        title="Login",
+        statement="The user can log in.",
+        type=RequirementType.FUNCTIONAL,
+        acceptance_criteria=[
+            "Given a registered user When valid credentials are entered Then the user is authenticated",
+            "The system rejects invalid credentials",
+        ],
+    )
+
+    steps, expected = build_test_case_content(requirement)
+
+    assert steps == [
+        "1.1. Given a registered user",
+        "1.2. When valid credentials are entered",
+        "2. Execute the behavior described by acceptance criterion: The system rejects invalid credentials",
+    ]
+    assert expected == [
+        "the user is authenticated",
+        "The system rejects invalid credentials",
+    ]
+
+
+def test_build_test_case_content_falls_back_to_requirement():
+    from app.main import build_test_case_content
+    from app.models import Requirement, RequirementType
+
+    requirement = Requirement(
+        id="REQ-2",
+        title="Export",
+        statement="The system exports a report.",
+        type=RequirementType.FUNCTIONAL,
+    )
+
+    steps, expected = build_test_case_content(requirement)
+
+    assert "Execute the behavior described by the requirement." in steps
+    assert expected == ["The system exports a report."]

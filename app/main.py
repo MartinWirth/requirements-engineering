@@ -100,16 +100,16 @@ class AIModelSelection(BaseModel):
 
 
 AI_MODELS = [
-    {"id": "gpt-5.3-codex", "label": "GPT-5.3 Codex — coding"},
-    {"id": "gpt-6.1-sol", "label": "GPT-6.1 Sol — general"},
-    {"id": "gpt-6-luna", "label": "GPT-6 Luna — economical"},
+    {"id": "qwen/qwen2.5-coder-32b-instruct", "label": "Qwen 2.5 Coder 32B — coding"},
+    {"id": "meta/llama-3.3-70b-instruct", "label": "Llama 3.3 70B — general"},
+    {"id": "qwen/qwen3-next-80b-a3b-instruct", "label": "Qwen3 Next 80B A3B — reasoning"},
 ]
 
 
 @app.get("/api/ai-config")
 def get_ai_config():
     import os
-    model = os.getenv("AI_MODEL", "")
+    model = os.getenv("AI_MODEL", "qwen/qwen2.5-coder-32b-instruct")
     if model not in {item["id"] for item in AI_MODELS}:
         model = AI_MODELS[0]["id"]
         os.environ["AI_MODEL"] = model

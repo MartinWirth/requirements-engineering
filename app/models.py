@@ -107,3 +107,50 @@ class TraceLink(_NextIDModel):
     source_id: str
     target_id: str
     relation: str
+
+
+class WorkItemType(str, Enum):
+    ISSUE = "issue"
+    TASK = "task"
+    SUBTASK = "subtask"
+
+
+class WorkItemStatus(str, Enum):
+    TODO = "todo"
+    IN_PROGRESS = "in_progress"
+    IN_REVIEW = "in_review"
+    DONE = "done"
+    BLOCKED = "blocked"
+
+
+class WorkItem(_NextIDModel):
+    id: str = ""
+    title: str
+    description: str = ""
+    type: WorkItemType = WorkItemType.TASK
+    status: WorkItemStatus = WorkItemStatus.TODO
+    priority: str = "medium"
+    parent_id: str | None = None
+    requirement_ids: list[str] = Field(default_factory=list)
+    assignee: str = ""
+    acceptance_criteria: list[str] = Field(default_factory=list)
+
+
+class TestCaseStatus(str, Enum):
+    DRAFT = "draft"
+    READY = "ready"
+    PASSED = "passed"
+    FAILED = "failed"
+    BLOCKED = "blocked"
+
+
+class TestCase(_NextIDModel):
+    id: str = ""
+    title: str
+    description: str = ""
+    status: TestCaseStatus = TestCaseStatus.DRAFT
+    requirement_ids: list[str] = Field(default_factory=list)
+    work_item_ids: list[str] = Field(default_factory=list)
+    steps: list[str] = Field(default_factory=list)
+    expected_results: list[str] = Field(default_factory=list)
+    actual_result: str = ""

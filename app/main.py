@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pathlib import Path
 import json
 import re
+import subprocess
 from datetime import datetime, timezone
 
 from fastapi.responses import RedirectResponse
@@ -92,6 +93,30 @@ def execute_test_case(test_case_id: str, execution: TestExecution):
         raise HTTPException(400, "Execution status must be passed, failed, or blocked")
     test.status = execution.status
     test.actual_result = execution.actual_result
+    test.executed_at = datetime.now(timezone.utc).isoformat()
+    store.update("test_cases", test)
+    return test
+
+
+@app.post("/api/test-cases/{test_case_id}/run")
+def run_test_case(test_case_id: str):
+    test = store.get("test_cases", TestCase, test_case_id)
+    if not test:
+        raise HTTPException(404, "Test case not found")
+    if not test.execution_command:
+        raise HTTPException(400, "No execution command configured")
+    try:
+        result = subprocess.run(test.execution_command, cwd=Path(__file__).parent.parent,
+                                capture_output=True, text=True, timeout=60, check=False)
+    except subprocess.TimeoutExpired:
+        test.status, output = "blocked", "Test execution timed out after 60 seconds."
+    except OSError as exc:
+        test.status, output = "blocked", f"Test execution could not start: {exc}"
+    else:
+        test.status = "passed" if result.returncode == 0 else "failed"
+        output = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
+        output = f"exit code: {result.returncode}\n{output}".strip()
+    test.actual_result = output
     test.executed_at = datetime.now(timezone.utc).isoformat()
     store.update("test_cases", test)
     return test

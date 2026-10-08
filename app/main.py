@@ -47,8 +47,13 @@ def get_model_schema():
 
 
 @app.post("/api/requirements/{requirement_id}/generate")
-def generate_workflow(requirement_id: str):
+def generate_workflow(requirement_id: str, request: RequirementGenerationRequest | None = None):
     req = store.get("requirements", Requirement, requirement_id)
+    if not req and request and request.requirement:
+        if request.requirement.id != requirement_id:
+            raise HTTPException(400, "Requirement ID does not match request path")
+        req = request.requirement
+        store.insert("requirements", req)
     if not req:
         raise HTTPException(404, "Requirement not found")
     n = store.next_id("work_items", WorkItem)
@@ -94,6 +99,10 @@ def generate_workflow(requirement_id: str):
         "requirement": req, "issue": issue, "task": task, "subtask": subtask,
         "work_item": subtask, "test_case": test, "trace_links": links,
     }
+
+class RequirementGenerationRequest(BaseModel):
+    requirement: Requirement | None = None
+
 
 class AIModelSelection(BaseModel):
     model: str

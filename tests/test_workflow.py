@@ -45,3 +45,15 @@ def test_work_item_ai_fields():
     assert item.ai_commit == "abc123"
     assert item.ai_pr_url.endswith("/pull/1")
     assert item.ai_pushed_at
+
+def test_generated_workflow_hierarchy():
+    issue = WorkItem(id="WI-1", title="Implement", type=WorkItemType.ISSUE)
+    task = WorkItem(id="WI-2", title="Develop", type=WorkItemType.TASK, parent_id=issue.id)
+    subtask = WorkItem(id="WI-3", title="Code", type=WorkItemType.SUBTASK, parent_id=task.id)
+    case = TestCase(
+        id="TEST-1", title="Verify", status=TestCaseStatus.READY,
+        requirement_ids=["REQ-1"], work_item_ids=[subtask.id],
+    )
+    assert task.parent_id == issue.id
+    assert subtask.parent_id == task.id
+    assert case.work_item_ids == [subtask.id]

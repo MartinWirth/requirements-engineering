@@ -75,6 +75,10 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt\n\n# AI development execution (configure your provider)\n# Windows PowerShell: $env:AI_API_URL="https://your-provider.example/v1/chat/completions"\n# $env:AI_API_KEY="..."\n# $env:AI_MODEL="your-model"
+# GitHub publication (required for Publish PR)
+# $env:GITHUB_TOKEN="..."
+# $env:GITHUB_REPOSITORY="MartinWirth/requirements-engineering"
+# $env:GITHUB_BASE_BRANCH="main"
 uvicorn app.main:app --reload
 ```
 
@@ -99,4 +103,4 @@ Requirements are now connected to implementation work and verification:
 - Use **Traceability** for explicit `satisfies` and `verifies` relationships.
 - The API endpoints are `/api/work-items` and `/api/test-cases`.
 
-This gives a compact development loop: select a requirement, create implementation work, split it into subtasks, implement it, then create and execute a linked test case. Work Items can also be executed by a configured AI API; the AI returns file changes and test commands, which the backend applies inside the repository and verifies locally.
+This gives a compact development loop: select a requirement, create implementation work, split it into subtasks, implement it, then create and execute a linked test case. Work Items can also be executed by a configured AI API; the AI returns file changes and test commands, which the backend applies inside the repository and verifies locally. After a successful AI execution, **Publish PR** pushes the dedicated branch to GitHub and creates a pull request against the configured base branch.

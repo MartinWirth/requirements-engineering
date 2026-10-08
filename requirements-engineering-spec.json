@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "requirements-engineering-workbench-spec.json",
   "title": "Requirements Engineering Workbench Specification",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "status": "baseline",
-  "description": "Baseline requirements for a local, API-first Requirements Engineering Workbench aligned with IREB CPRE terminology, including development work and executable verification.",
+  "description": "Baseline requirements for a local, API-first Requirements Engineering Workbench aligned with IREB CPRE terminology, including AI-assisted development and executable verification.",
   "architecture": {
     "runtime": "Python 3.12+",
     "backend": "FastAPI",
@@ -12,7 +12,8 @@
     "persistence": "SQLite",
     "frontend": "HTML/CSS/JavaScript",
     "interface": "REST API",
-    "test_execution": "Configured local commands executed directly by the backend with timeout and captured output"
+    "test_execution": "Configured local commands executed directly by the backend with timeout and captured output",
+    "ai_development": "Configured AI API receives a work item and repository context, returns structured file changes and test commands, and the backend applies changes only within the repository."
   },
   "functional_requirements": [
     {
@@ -152,6 +153,12 @@
       "title": "Run automated verification",
       "shall": "execute a configured Test Case command, capture its output and exit code, and derive Passed, Failed or Blocked status",
       "priority": "must"
+    },
+    {
+      "id": "FR-024",
+      "title": "Execute development work with AI",
+      "shall": "send a Work Item and relevant requirements to a configured AI API, apply returned repository changes, and record the AI execution result",
+      "priority": "must"
     }
   ],
   "domain_models": {
@@ -251,7 +258,9 @@
         "parent_id",
         "requirement_ids",
         "assignee",
-        "acceptance_criteria"
+        "acceptance_criteria",
+        "ai_summary",
+        "ai_executed_at"
       ],
       "type_values": [
         "issue",
@@ -325,6 +334,21 @@
       "id": "API-007",
       "shall": "apply a 60-second execution timeout and return a blocked result when the command cannot start or times out",
       "priority": "must"
+    },
+    {
+      "id": "API-008",
+      "shall": "provide a Work Item AI execution endpoint that applies structured AI file changes within the repository",
+      "priority": "must"
+    },
+    {
+      "id": "API-009",
+      "shall": "reject AI execution when AI_API_URL, AI_API_KEY or AI_MODEL is not configured",
+      "priority": "must"
+    },
+    {
+      "id": "API-010",
+      "shall": "run returned test commands with a 60-second timeout and set the work item to done, in_review or blocked",
+      "priority": "must"
     }
   ],
   "gui_requirements": [
@@ -371,6 +395,10 @@
     {
       "id": "GUI-011",
       "shall": "display automated execution output, status and execution timestamp in Test Cases"
+    },
+    {
+      "id": "GUI-012",
+      "shall": "provide an AI Execute action for Work Items and display the resulting execution status"
     }
   ],
   "requirements_engineering_scope": {
@@ -464,9 +492,10 @@
       "GUI behavior tests",
       "development work-item tests",
       "test-case execution",
-      "automated Test Case command execution"
+      "automated Test Case command execution",
+      "AI-assisted development execution"
     ],
-    "acceptance": "A requirement is accepted when its specified behavior is implemented and covered by an appropriate verification test. Automated verification may execute a configured local command and records its status, output and timestamp."
+    "acceptance": "A requirement is accepted when its specified behavior is implemented and covered by an appropriate verification test. Automated verification may execute a configured local command and records its status, output and timestamp. AI development execution is successful when a configured AI API returns valid structured changes, those changes are confined to the repository, and configured tests determine the resulting work-item status."
   },
   "future_requirements": {
     "status": "planned",
@@ -843,6 +872,15 @@
         "status": "draft",
         "priority": "must",
         "source": "project specification"
+      },
+      {
+        "id": "FR-024",
+        "title": "Execute development work with AI",
+        "statement": "send a Work Item and relevant requirements to a configured AI API, apply returned repository changes, and record the AI execution result",
+        "type": "functional",
+        "status": "draft",
+        "priority": "must",
+        "source": "project specification"
       }
     ],
     "user_stories": [
@@ -1146,6 +1184,18 @@
         "source_id": "TEST-001",
         "target_id": "FR-023",
         "relation": "verifies"
+      },
+      {
+        "id": "TRACE-015",
+        "source_id": "WI-001",
+        "target_id": "FR-024",
+        "relation": "satisfies"
+      },
+      {
+        "id": "TRACE-016",
+        "source_id": "TEST-001",
+        "target_id": "FR-024",
+        "relation": "verifies"
       }
     ],
     "work_items": [
@@ -1163,7 +1213,9 @@
         "assignee": "",
         "acceptance_criteria": [
           "Implementation satisfies the linked requirement"
-        ]
+        ],
+        "ai_summary": "",
+        "ai_executed_at": null
       },
       {
         "id": "WI-002",
@@ -1207,4 +1259,4 @@
       }
     ]
   }
-}
+}\n

@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from typing import Iterable, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class _NextIDModel(BaseModel):
@@ -134,6 +134,12 @@ class WorkItem(_NextIDModel):
     requirement_ids: list[str] = Field(default_factory=list)
     assignee: str = ""
     acceptance_criteria: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_parent(self):
+        if self.type == WorkItemType.SUBTASK and not self.parent_id:
+            raise ValueError("Subtask requires parent_id")
+        return self
 
 
 class TestCaseStatus(str, Enum):

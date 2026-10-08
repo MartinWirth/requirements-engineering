@@ -95,7 +95,7 @@ async function loadTable(){
   if(!response.ok)return showError("Could not load "+selectedType+".");
   rows=await response.json();
   const key={Requirements:"requirements","User Stories":"user_stories","Use Cases":"use_cases",Actors:"actors",Traceability:"traceability","Work Items":"work_items","Test Cases":"test_cases"}[selectedType];
-  if(key&&spec?.project_data?.[key])rows=spec.project_data[key];
+  if(key&&spec?.project_data?.[key]){const base=spec.project_data[key],ids=new Set(rows.map(r=>r.id));rows=[...base.filter(r=>!ids.has(r.id)),...rows]}
   setActiveNav();renderTable();
 }
 function showMessage(text){if(message){message.textContent=text;message.className="success"}}function showError(text){if(message){message.textContent=text;message.className="error"}else console.error(text)}

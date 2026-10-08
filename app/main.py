@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
+from dotenv import load_dotenv
 from pathlib import Path
 import json
 import re
@@ -18,6 +19,8 @@ from .ui import model_schema
 from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType
 from .ai import AIExecutionError, apply_changes, commit_changes, execute_work_item
 from .github import GitHubIntegrationError, publish_branch
+
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
               description="API-driven Requirements Engineering GUI server.")

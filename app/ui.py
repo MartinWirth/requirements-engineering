@@ -55,6 +55,8 @@ FIELD_HELP: dict[str, tuple[str, str]] = {
     "steps": ("Actions performed during the test.", IREB_DOWNLOADS),
     "expected_results": ("Expected result for each test step.", IREB_DOWNLOADS),
     "actual_result": ("Observed result from the latest test execution.", IREB_DOWNLOADS),
+    "executed_at": ("Timestamp of the latest test execution.", IREB_DOWNLOADS),
+    "execution_command": ("Command arguments executed for automated verification.", IREB_DOWNLOADS),
 }
 
 MODEL_DEFINITIONS = {

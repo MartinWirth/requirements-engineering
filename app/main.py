@@ -109,9 +109,10 @@ AI_MODELS = [
 @app.get("/api/ai-config")
 def get_ai_config():
     import os
-    model = os.getenv("AI_MODEL", AI_MODELS[0]["id"])
+    model = os.getenv("AI_MODEL", "")
     if model not in {item["id"] for item in AI_MODELS}:
         model = AI_MODELS[0]["id"]
+        os.environ["AI_MODEL"] = model
     return {"model": model, "models": AI_MODELS}
 
 

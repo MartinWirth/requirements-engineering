@@ -71,6 +71,15 @@ def execute_work_item(work_item: dict[str, Any], requirements: list[dict[str, An
     try:
         with urllib.request.urlopen(request,timeout=120) as response:
             payload=json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = exc.read().decode("utf-8", errors="replace").strip()
+        except OSError:
+            detail = ""
+        message = f"AI API request failed: HTTP {exc.code} {exc.reason} (model: {model})."
+        if detail:
+            message += f" Provider response: {detail[:1200]}"
+        raise AIExecutionError(message) from exc
     except (urllib.error.URLError,TimeoutError,json.JSONDecodeError) as exc:
         raise AIExecutionError(f"AI API request failed: {exc}") from exc
     try:

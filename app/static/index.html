@@ -8,7 +8,7 @@
 <body>
 <header>
   <div class="header-main"><div class="header-selects"><label for="projectSelect">Project:</label><select id="projectSelect"></select><button id="newProjectButton" type="button">New Project</button><label for="modelSelect">Model:</label><select id="modelSelect">
-    <option>Requirements</option><option>User Stories</option><option>Use Cases</option><option>Actors</option><option>Traceability</option><option>Work Items</option><option>Test Cases</option>
+    <option>Requirements</option><option>User Stories</option><option>Use Cases</option><option>Actors</option><option>Traceability</option><option>Work Items</option><option>Issues</option><option>Tasks</option><option>Subtasks</option><option>Test Cases</option>
   </select><label for="aiModelSelect">AI Model:</label><select id="aiModelSelect" title="AI model"></select><label for="tooltipMode">Tooltip type:</label><select id="tooltipMode" title="Tooltip type">
     <option value="full">Full + dependencies</option>
     <option value="api">API call</option>
@@ -27,6 +27,6 @@
 </div>
 <div id="tooltip" class="tooltip" hidden></div>
 <dialog id="newProjectDialog"><form method="dialog" id="newProjectForm"><h2>New Project Specification</h2><label>Name<input id="projectName" required placeholder="customer-portal"></label><label>Title<input id="projectTitle" placeholder="Customer Portal"></label><div><button value="cancel">Cancel</button><button id="createProjectButton" value="create">Create</button></div></form></dialog>
-<script src="/static/app.js?v=6"></script>
+<script src="/static/app.js?v=7"></script>
 </body>
 </html>

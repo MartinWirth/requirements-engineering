@@ -46,6 +46,49 @@ def get_model_schema():
     return model_schema()
 
 
+def build_test_case_content(req: Requirement) -> tuple[list[str], list[str]]:
+    criteria = [item.strip() for item in req.acceptance_criteria if item and item.strip()]
+    if not criteria:
+        return (
+            [
+                "Execute the behavior described by the requirement.",
+                f"Verify that the requirement is fulfilled: {req.statement}",
+            ],
+            [req.statement],
+        )
+
+    steps: list[str] = []
+    expected: list[str] = []
+    for index, criterion in enumerate(criteria, start=1):
+        parts = re.split(r"\\s+(?=(?:Given|When|Then)\\s+)", criterion, flags=re.IGNORECASE)
+        given_when: list[str] = []
+        then_parts: list[str] = []
+        for part in parts:
+            value = part.strip()
+            if not value:
+                continue
+            if re.match(r"^Then\\s+", value, flags=re.IGNORECASE):
+                then_parts.append(re.sub(r"^Then\\s+", "", value, flags=re.IGNORECASE).strip())
+            elif re.match(r"^(?:Given|When)\\s+", value, flags=re.IGNORECASE):
+                given_when.append(value)
+            else:
+                then_parts.append(value)
+
+        if given_when:
+            steps.extend([f"{index}.{position}. {value}" for position, value in enumerate(given_when, start=1)])
+        else:
+            steps.append(f"{index}. Execute the behavior described by acceptance criterion: {criterion}")
+
+        if then_parts:
+            expected.extend(then_parts)
+        else:
+            expected.append(criterion)
+
+    if not steps:
+        steps.append("Execute the behavior described by the requirement.")
+    return steps, expected
+
+
 @app.post("/api/requirements/{requirement_id}/generate")
 def generate_workflow(requirement_id: str, request: RequirementGenerationRequest | None = None):
     req = store.get("requirements", Requirement, requirement_id)
@@ -76,12 +119,12 @@ def generate_workflow(requirement_id: str, request: RequirementGenerationRequest
         store.insert("work_items", item)
 
     t = store.next_id("test_cases", TestCase)
+    test_steps, test_expected = build_test_case_content(req)
     test = TestCase(
         id=f"TEST-{t:03d}", title=f"Verify: {req.title}",
-        description=f"Verify requirement {req.id}.", status="ready",
-        requirement_ids=[req.id], work_item_ids=[subtask.id],
-        steps=["Execute the implemented behavior."],
-        expected_results=req.acceptance_criteria or [req.statement],
+        description=f"Verify requirement {req.id} against its acceptance criteria.",
+        status="ready", requirement_ids=[req.id], work_item_ids=[subtask.id],
+        steps=test_steps, expected_results=test_expected,
     )
     store.insert("test_cases", test)
 

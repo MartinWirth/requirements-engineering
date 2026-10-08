@@ -5,6 +5,9 @@
   "version": "1.0.0",
   "status": "draft",
   "description": "Requirements specification for an email reader focused on message browsing, sorting, grouping, selection and traceable requirements engineering.",
+  "project_requirements": [
+    "Create the GitHub repository MartinWirth/test-email-reader if it does not exist."
+  ],
   "architecture": {
     "style": "API-driven web application",
     "backend": "FastAPI",

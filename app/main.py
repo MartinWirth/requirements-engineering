@@ -12,6 +12,7 @@ from .database import SQLiteStore
 from .gui import create_gui_router
 from .resources import RESOURCES
 from .ui import model_schema
+from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType
 
 app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
               description="API-driven Requirements Engineering GUI server.")
@@ -36,6 +37,27 @@ def health() -> dict[str, str]:
 def get_model_schema():
     return model_schema()
 
+
+@app.post("/api/requirements/{requirement_id}/generate")
+def generate_workflow(requirement_id: str):
+    req = store.get("requirements", Requirement, requirement_id)
+    if not req:
+        raise HTTPException(404, "Requirement not found")
+    n = store.next_id("work_items", WorkItem)
+    task = WorkItem(id=f"WI-{n:03d}", title=f"Implement: {req.title}", description=req.statement,
+                    type=WorkItemType.TASK, priority=req.priority, requirement_ids=[req.id],
+                    acceptance_criteria=req.acceptance_criteria)
+    store.insert("work_items", task)
+    t = store.next_id("test_cases", TestCase)
+    test = TestCase(id=f"TEST-{t:03d}", title=f"Verify: {req.title}", description=f"Verify requirement {req.id}.",
+                    status="ready", requirement_ids=[req.id], work_item_ids=[task.id],
+                    steps=["Execute the implemented behavior."],
+                    expected_results=req.acceptance_criteria or [req.statement])
+    store.insert("test_cases", test)
+    l = store.next_id("trace_links", TraceLink)
+    store.insert("trace_links", TraceLink(id=f"TRACE-{l:03d}", source_id=task.id, target_id=req.id, relation="satisfies"))
+    store.insert("trace_links", TraceLink(id=f"TRACE-{l + 1:03d}", source_id=test.id, target_id=req.id, relation="verifies"))
+    return {"work_item": task, "test_case": test}
 
 @app.get("/api/projects")
 def get_projects():

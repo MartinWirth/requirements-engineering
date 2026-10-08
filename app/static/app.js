@@ -121,7 +121,9 @@ async function generate(row){
   const result=await response.json().catch(()=>({}));
   if(!response.ok)return showError(result.detail||"Generation failed");
   const issue=result.issue?.id||"issue",task=result.task?.id||"task",subtask=result.subtask?.id||result.work_item?.id||"subtask",test=result.test_case?.id||"test";
-  showMessage(issue+" → "+task+" → "+subtask+" → "+test+" created. Select Work Items and run AI Execute on "+subtask+".");
+  showMessage(issue+" → "+task+" → "+subtask+" → "+test+" created.");
+  selectedType="Work Items";
+  filter.value="";
   await loadTable();
 }
 function renderTable(){

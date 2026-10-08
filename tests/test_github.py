@@ -1,6 +1,6 @@
 import json
 
-from app.github import _create_pull_request
+from app.github import _create_pull_request, _find_open_pull_request
 
 
 def test_pull_request_payload(monkeypatch):
@@ -14,7 +14,12 @@ def test_pull_request_payload(monkeypatch):
             return False
 
         def read(self):
-            return json.dumps({"html_url": "https://github.com/MartinWirth/requirements-engineering/pull/7", "number": 7}).encode()
+            return json.dumps(
+                {
+                    "html_url": "https://github.com/MartinWirth/requirements-engineering/pull/7",
+                    "number": 7,
+                }
+            ).encode()
 
     def fake_urlopen(req, timeout):
         captured["url"] = req.full_url
@@ -48,3 +53,47 @@ def test_pull_request_payload(monkeypatch):
     }
     assert captured["timeout"] == 30
     assert captured["headers"]["Authorization"] == "Bearer secret"
+
+
+def test_find_open_pull_request(monkeypatch):
+    captured = {}
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(
+                [
+                    {
+                        "html_url": "https://github.com/MartinWirth/requirements-engineering/pull/8",
+                        "number": 8,
+                    }
+                ]
+            ).encode()
+
+    def fake_urlopen(req, timeout):
+        captured["url"] = req.full_url
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("app.github.request.urlopen", fake_urlopen)
+    result = _find_open_pull_request(
+        "secret",
+        "MartinWirth/requirements-engineering",
+        "https://api.github.com",
+        branch="ai/WI-001-implement",
+        base="main",
+    )
+
+    assert result == {
+        "url": "https://github.com/MartinWirth/requirements-engineering/pull/8",
+        "number": 8,
+    }
+    assert "state=open" in captured["url"]
+    assert "head=MartinWirth%3AWI-001-implement" in captured["url"]
+    assert "base=main" in captured["url"]
+    assert captured["timeout"] == 30

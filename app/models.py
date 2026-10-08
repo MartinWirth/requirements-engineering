@@ -138,6 +138,8 @@ class WorkItem(_NextIDModel):
     ai_executed_at: str | None = None
     ai_branch: str = ""
     ai_commit: str = ""
+    ai_pr_url: str = ""
+    ai_pushed_at: str | None = None
 
     @model_validator(mode="after")
     def validate_parent(self):

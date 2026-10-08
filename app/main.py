@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import re
 import subprocess
+import uuid
 from datetime import datetime, timezone
 
 
@@ -215,26 +216,27 @@ def execute_test_case(test_case_id: str, execution: TestExecution):
 
 @app.post("/api/test-cases/{test_case_id}/run")
 def run_test_case(test_case_id: str):
+    action_run_id = str(uuid.uuid4())
     test = store.get("test_cases", TestCase, test_case_id)
     if not test:
-        raise HTTPException(404, "Test case not found")
+        raise HTTPException(404, f"Test case not found (action run ID: {action_run_id})")
     if not test.execution_command:
-        raise HTTPException(400, "No execution command configured")
+        raise HTTPException(400, f"No execution command configured (action run ID: {action_run_id})")
     try:
         result = subprocess.run(test.execution_command, cwd=Path(__file__).parent.parent,
                                 capture_output=True, text=True, timeout=60, check=False)
     except subprocess.TimeoutExpired:
-        test.status, output = "blocked", "Test execution timed out after 60 seconds."
+        test.status, output = "blocked", f"Test execution timed out after 60 seconds. Action run ID: {action_run_id}"
     except OSError as exc:
-        test.status, output = "blocked", f"Test execution could not start: {exc}"
+        test.status, output = "blocked", f"Test execution could not start: {exc}. Action run ID: {action_run_id}"
     else:
         test.status = "passed" if result.returncode == 0 else "failed"
         output = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
-        output = f"exit code: {result.returncode}\n{output}".strip()
+        output = f"Action run ID: {action_run_id}\nexit code: {result.returncode}\n{output}".strip()
     test.actual_result = output
     test.executed_at = datetime.now(timezone.utc).isoformat()
     store.update("test_cases", test)
-    return test
+    return {"action_run_id": action_run_id, "test_case": test}
 
 
 class ProjectSpecCreate(BaseModel):
@@ -267,9 +269,10 @@ def create_project_spec(request: ProjectSpecCreate):
 
 @app.post("/api/work-items/{work_item_id}/ai-execute")
 def ai_execute_work_item(work_item_id: str):
+    action_run_id = str(uuid.uuid4())
     work_item = store.get("work_items", WorkItem, work_item_id)
     if not work_item:
-        raise HTTPException(404, "Work item not found")
+        raise HTTPException(404, f"Work item not found (action run ID: {action_run_id})")
     requirements = [store.get("requirements", Requirement, rid) for rid in work_item.requirement_ids]
     requirements = [r.model_dump() for r in requirements if r]
     root = Path(__file__).parent.parent.resolve()
@@ -299,28 +302,29 @@ def ai_execute_work_item(work_item_id: str):
         work_item.ai_branch = git_info["branch"]
         work_item.ai_commit = git_info["commit"]
         store.update("work_items", work_item)
-        return {"work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "\n\n".join(output)}
+        return {"action_run_id": action_run_id, "work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "\n\n".join(output)}
     except AIExecutionError as exc:
         work_item.status = "blocked"
-        work_item.ai_summary = str(exc)
+        work_item.ai_summary = f"{exc} (action run ID: {action_run_id})"
         work_item.ai_executed_at = datetime.now(timezone.utc).isoformat()
         store.update("work_items", work_item)
-        raise HTTPException(502, str(exc)) from exc
+        raise HTTPException(502, f"{exc} (action run ID: {action_run_id})") from exc
     except Exception as exc:
         work_item.status = "blocked"
-        work_item.ai_summary = str(exc)
+        work_item.ai_summary = f"{exc} (action run ID: {action_run_id})"
         work_item.ai_executed_at = datetime.now(timezone.utc).isoformat()
         store.update("work_items", work_item)
-        raise HTTPException(500, "AI development execution failed") from exc
+        raise HTTPException(500, f"AI development execution failed (action run ID: {action_run_id})") from exc
 
 
 @app.post("/api/work-items/{work_item_id}/publish")
 def publish_work_item(work_item_id: str):
+    action_run_id = str(uuid.uuid4())
     work_item = store.get("work_items", WorkItem, work_item_id)
     if not work_item:
-        raise HTTPException(404, "Work item not found")
+        raise HTTPException(404, f"Work item not found (action run ID: {action_run_id})")
     if not work_item.ai_branch or not work_item.ai_commit:
-        raise HTTPException(400, "Work item has no AI branch and commit to publish")
+        raise HTTPException(400, f"Work item has no AI branch and commit to publish (action run ID: {action_run_id})")
     try:
         result = publish_branch(
             root=Path(__file__).parent.parent.resolve(),
@@ -335,6 +339,6 @@ def publish_work_item(work_item_id: str):
         work_item.ai_pr_url = result["url"]
         work_item.ai_pushed_at = datetime.now(timezone.utc).isoformat()
         store.update("work_items", work_item)
-        return {"work_item": work_item, "github": result}
+        return {"action_run_id": action_run_id, "work_item": work_item, "github": result}
     except GitHubIntegrationError as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise HTTPException(502, f"{exc} (action run ID: {action_run_id})") from exc

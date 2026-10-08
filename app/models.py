@@ -160,3 +160,4 @@ class TestCase(_NextIDModel):
     steps: list[str] = Field(default_factory=list)
     expected_results: list[str] = Field(default_factory=list)
     actual_result: str = ""
+    executed_at: str | None = None

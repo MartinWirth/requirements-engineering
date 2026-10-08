@@ -22,6 +22,8 @@ FIELD_HELP: dict[str, tuple[str, str]] = {
     "source": ("Origin or source of the requirement.", IREB_DOWNLOADS),
     "rationale": ("Reason for the requirement or decision.", IREB_GLOSSARY),
     "acceptance_criteria": ("Criteria used to verify fulfillment.", IREB_GLOSSARY),\n    "ai_summary": ("Summary returned by the AI development execution.", IREB_DOWNLOADS),\n    "ai_executed_at": ("Timestamp of the latest AI development execution.", IREB_DOWNLOADS),
+    "ai_branch": ("Git branch created for the AI implementation.", IREB_DOWNLOADS),
+    "ai_commit": ("Git commit created for the AI implementation.", IREB_DOWNLOADS),
     "related_use_cases": ("Use cases related to this element.", IREB_MODELING),
     "related_requirements": ("Requirements related to this element.", IREB_DOWNLOADS),
     "depends_on": ("Elements on which this element depends.", IREB_DOWNLOADS),

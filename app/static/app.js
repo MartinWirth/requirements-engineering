@@ -117,8 +117,18 @@ async function publishPR(row){
   showMessage(row.id+" published: "+(result.github?.url||"pull request created"));await loadTable();
 }
 async function generate(row){
-  const response=await fetch("/api/requirements/"+encodeURIComponent(row.id)+"/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requirement:row})});
-  const result=await response.json().catch(()=>({}));
+  const endpoint="/api/requirements/"+encodeURIComponent(row.id)+"/generate";
+  let response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requirement:row})});
+  let result=await response.json().catch(()=>({}));
+  if(!response.ok&&response.status===404&&result.detail==="Requirement not found"){
+    const create=await fetch("/api/requirements",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(row)});
+    if(!create.ok&&create.status!==409){
+      const detail=await create.json().catch(()=>({}));
+      return showError(detail.detail||"Requirement could not be stored.");
+    }
+    response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requirement:row})});
+    result=await response.json().catch(()=>({}));
+  }
   if(!response.ok)return showError(result.detail||"Generation failed");
   const issue=result.issue?.id||"issue",task=result.task?.id||"task",subtask=result.subtask?.id||result.work_item?.id||"subtask",test=result.test_case?.id||"test";
   showMessage(issue+" → "+task+" → "+subtask+" → "+test+" created.");

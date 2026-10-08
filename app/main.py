@@ -14,7 +14,7 @@ from .database import SQLiteStore
 from .gui import create_gui_router
 from .resources import RESOURCES
 from .ui import model_schema
-from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType\nfrom .ai import AIExecutionError, apply_changes, execute_work_item
+from .models import Requirement, TestCase, TraceLink, WorkItem, WorkItemType\nfrom .ai import AIExecutionError, apply_changes, commit_changes, execute_work_item
 
 app = FastAPI(title="Requirements Engineering Workbench", version="0.1.0",
               description="API-driven Requirements Engineering GUI server.")
@@ -163,6 +163,7 @@ def ai_execute_work_item(work_item_id: str):
     try:
         result = execute_work_item(work_item.model_dump(), requirements, root)
         changed = apply_changes(root, result)
+        git_info = commit_changes(root, changed, work_item.id, work_item.title)
         commands = result.get("test_commands") or []
         output = []
         status = "done"
@@ -180,8 +181,10 @@ def ai_execute_work_item(work_item_id: str):
         work_item.status = status
         work_item.ai_summary = result.get("summary","")
         work_item.ai_executed_at = datetime.now(timezone.utc).isoformat()
+        work_item.ai_branch = git_info["branch"]
+        work_item.ai_commit = git_info["commit"]
         store.update("work_items", work_item)
-        return {"work_item": work_item, "changed_files": changed, "test_output": "\n\n".join(output)}
+        return {"work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "\n\n".join(output)}
     except AIExecutionError as exc:
         work_item.status = "blocked"
         work_item.ai_summary = str(exc)

@@ -147,8 +147,7 @@ def create_project_spec(request: ProjectSpecCreate):
         spec = json.loads(template.read_text(encoding="utf-8"))
         spec["$id"] = filename
         spec["title"] = request.title.strip() or name.replace("-", " ").replace("_", " ").title()
-        target.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "
-", encoding="utf-8")
+        target.write_text(json.dumps(spec, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(500, "Project specification could not be created") from exc
     return {"path": filename, "spec": spec}
@@ -176,14 +175,11 @@ def ai_execute_work_item(work_item_id: str):
                 continue
             try:
                 test = subprocess.run(command,cwd=root,capture_output=True,text=True,timeout=60,check=False)
-                output.append(f"$ {' '.join(command)}
-exit code: {test.returncode}
-{test.stdout}{test.stderr}".strip())
+                output.append(f"$ {' '.join(command)}\nexit code: {test.returncode}\n{test.stdout}{test.stderr}".strip())
                 if test.returncode != 0:
                     status = "in_review"
             except (OSError,subprocess.TimeoutExpired) as exc:
-                output.append(f"$ {' '.join(command)}
-blocked: {exc}")
+                output.append(f"$ {' '.join(command)}\nblocked: {exc}")
                 status = "blocked"
         work_item.status = status
         work_item.ai_summary = result.get("summary","")
@@ -191,9 +187,7 @@ blocked: {exc}")
         work_item.ai_branch = git_info["branch"]
         work_item.ai_commit = git_info["commit"]
         store.update("work_items", work_item)
-        return {"work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "
-
-".join(output)}
+        return {"work_item": work_item, "changed_files": changed, "git": git_info, "test_output": "\n\n".join(output)}
     except AIExecutionError as exc:
         work_item.status = "blocked"
         work_item.ai_summary = str(exc)

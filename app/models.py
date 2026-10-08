@@ -136,6 +136,8 @@ class WorkItem(_NextIDModel):
     acceptance_criteria: list[str] = Field(default_factory=list)
     ai_summary: str = ""
     ai_executed_at: str | None = None
+    ai_branch: str = ""
+    ai_commit: str = ""
 
     @model_validator(mode="after")
     def validate_parent(self):

@@ -18,6 +18,10 @@ def _config() -> tuple[str, str, str]:
     url=os.getenv("AI_API_URL","").strip()
     key=os.getenv("AI_API_KEY","").strip()
     model=os.getenv("AI_MODEL","").strip()
+    if model in {"qwen/qwen2.5-coder-32b-instruct", "qwen/qwen3-next-80b-a3b-instruct"}:
+        # These NVIDIA hosted free endpoints are deprecated; migrate old .env files.
+        model="poolside/laguna-xs-2.1"
+        os.environ["AI_MODEL"]=model
     if not url or not key or not model:
         raise AIExecutionError("AI API is not configured; set AI_API_URL, AI_API_KEY and AI_MODEL.")
     return url,key,model

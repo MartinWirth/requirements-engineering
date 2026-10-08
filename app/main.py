@@ -117,10 +117,8 @@ def run_test_case(test_case_id: str):
         test.status, output = "blocked", f"Test execution could not start: {exc}"
     else:
         test.status = "passed" if result.returncode == 0 else "failed"
-        output = (result.stdout + ("
-" + result.stderr if result.stderr else "")).strip()
-        output = f"exit code: {result.returncode}
-{output}".strip()
+        output = (result.stdout + ("\n" + result.stderr if result.stderr else "")).strip()
+        output = f"exit code: {result.returncode}\n{output}".strip()
     test.actual_result = output
     test.executed_at = datetime.now(timezone.utc).isoformat()
     store.update("test_cases", test)

@@ -72,6 +72,9 @@ MODEL_DEFINITIONS = {
     "Actors": (Actor, "/api/actors"),
     "Traceability": (TraceLink, "/api/traceability"),
     "Work Items": (WorkItem, "/api/work-items"),
+    "Issues": (WorkItem, "/api/work-items"),
+    "Tasks": (WorkItem, "/api/work-items"),
+    "Subtasks": (WorkItem, "/api/work-items"),
     "Test Cases": (TestCase, "/api/test-cases"),
 }
 

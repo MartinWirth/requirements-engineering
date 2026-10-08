@@ -95,6 +95,36 @@ def generate_workflow(requirement_id: str):
         "work_item": subtask, "test_case": test, "trace_links": links,
     }
 
+class AIModelSelection(BaseModel):
+    model: str
+
+
+AI_MODELS = [
+    {"id": "gpt-5.3-codex", "label": "GPT-5.3 Codex — coding"},
+    {"id": "gpt-6.1-sol", "label": "GPT-6.1 Sol — general"},
+    {"id": "gpt-6-luna", "label": "GPT-6 Luna — economical"},
+]
+
+
+@app.get("/api/ai-config")
+def get_ai_config():
+    import os
+    model = os.getenv("AI_MODEL", AI_MODELS[0]["id"])
+    if model not in {item["id"] for item in AI_MODELS}:
+        model = AI_MODELS[0]["id"]
+    return {"model": model, "models": AI_MODELS}
+
+
+@app.post("/api/ai-config")
+def set_ai_config(selection: AIModelSelection):
+    import os
+    allowed = {item["id"] for item in AI_MODELS}
+    if selection.model not in allowed:
+        raise HTTPException(400, "Unsupported AI model")
+    os.environ["AI_MODEL"] = selection.model
+    return {"model": selection.model}
+
+
 @app.get("/api/projects")
 def get_projects():
     root = Path(__file__).parent.parent

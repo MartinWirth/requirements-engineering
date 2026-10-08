@@ -117,8 +117,11 @@ async function publishPR(row){
 }
 async function generate(row){
   const response=await fetch("/api/requirements/"+encodeURIComponent(row.id)+"/generate",{method:"POST"});
-  if(!response.ok){const d=await response.json().catch(()=>({}));return showError(d.detail||"Generation failed")}
-  const result=await response.json();showMessage(result.work_item.id+" and "+result.test_case.id+" created.");await loadTable();
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)return showError(result.detail||"Generation failed");
+  const issue=result.issue?.id||"issue",task=result.task?.id||"task",subtask=result.subtask?.id||result.work_item?.id||"subtask",test=result.test_case?.id||"test";
+  showMessage(issue+" → "+task+" → "+subtask+" → "+test+" created. Select Work Items and run AI Execute on "+subtask+".");
+  await loadTable();
 }
 function renderTable(){
   container.replaceChildren();const def=definition(),table=document.createElement("table"),thead=table.createTHead(),head=thead.insertRow(),actionTh=document.createElement("th");actionTh.textContent="Action";head.append(actionTh);def.fields.forEach(field=>{const th=document.createElement("th");addHeaderTooltip(th,field);head.append(th)});

@@ -67,20 +67,46 @@ The current foundation is based on the current IREB CPRE material. IREB's Founda
 
 ## Start
 
-```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/macOS
-source .venv/bin/activate
+Copy `.env.example` to `.env` and fill in the values required for AI execution and GitHub publication.
 
-pip install -r requirements.txt\n\n# AI development execution (configure your provider)\n# Windows PowerShell: $env:AI_API_URL="https://your-provider.example/v1/chat/completions"\n# $env:AI_API_KEY="..."\n# $env:AI_MODEL="your-model"
-# GitHub publication (required for Publish PR)
+### Windows PowerShell
+
+```powershell
+python -m venv .venv
+.venv\\Scripts\\activate
+pip install -r requirements.txt
+Copy-Item .env.example .env
+
+# Load .env manually, or set the variables in the PowerShell session:
+# $env:AI_API_URL="https://your-provider.example/v1/chat/completions"
+# $env:AI_API_KEY="..."
+# $env:AI_MODEL="your-model"
 # $env:GITHUB_TOKEN="..."
 # $env:GITHUB_REPOSITORY="MartinWirth/requirements-engineering"
 # $env:GITHUB_BASE_BRANCH="main"
+
 uvicorn app.main:app --reload
 ```
+
+### Environment variables
+
+Required for AI development execution:
+
+- `AI_API_URL`
+- `AI_API_KEY`
+- `AI_MODEL`
+
+Required for GitHub **Publish PR**:
+
+- `GITHUB_TOKEN`
+- `GITHUB_REPOSITORY`
+- `GITHUB_BASE_BRANCH` (defaults to `main`)
+
+Optional:
+
+- `GITHUB_API_URL` (defaults to `https://api.github.com`)
+
+The local `.env` file is ignored by Git. Never commit real API keys or GitHub tokens.
 
 API documentation: http://127.0.0.1:8000/docs
 
@@ -104,3 +130,5 @@ Requirements are now connected to implementation work and verification:
 - The API endpoints are `/api/work-items` and `/api/test-cases`.
 
 This gives a compact development loop: select a requirement, create implementation work, split it into subtasks, implement it, then create and execute a linked test case. Work Items can also be executed by a configured AI API; the AI returns file changes and test commands, which the backend applies inside the repository and verifies locally. After a successful AI execution, **Publish PR** pushes the dedicated branch to GitHub and creates a pull request against the configured base branch.
+
+**Publish PR is idempotent:** if the branch was already pushed and an open pull request for the same branch/base exists, retrying publication returns that existing pull request instead of creating a duplicate.

@@ -52,20 +52,48 @@ def generate_workflow(requirement_id: str):
     if not req:
         raise HTTPException(404, "Requirement not found")
     n = store.next_id("work_items", WorkItem)
-    task = WorkItem(id=f"WI-{n:03d}", title=f"Implement: {req.title}", description=req.statement,
-                    type=WorkItemType.TASK, priority=req.priority, requirement_ids=[req.id],
-                    acceptance_criteria=req.acceptance_criteria)
-    store.insert("work_items", task)
+    issue = WorkItem(
+        id=f"WI-{n:03d}", title=f"Implement: {req.title}", description=req.statement,
+        type=WorkItemType.ISSUE, priority=req.priority, requirement_ids=[req.id],
+        acceptance_criteria=req.acceptance_criteria,
+    )
+    task = WorkItem(
+        id=f"WI-{n + 1:03d}", title=f"Develop: {req.title}", description=req.statement,
+        type=WorkItemType.TASK, priority=req.priority, parent_id=issue.id,
+        requirement_ids=[req.id], acceptance_criteria=req.acceptance_criteria,
+    )
+    subtask = WorkItem(
+        id=f"WI-{n + 2:03d}", title=f"Implement: {req.title}", description=req.statement,
+        type=WorkItemType.SUBTASK, priority=req.priority, parent_id=task.id,
+        requirement_ids=[req.id], acceptance_criteria=req.acceptance_criteria,
+    )
+    for item in (issue, task, subtask):
+        store.insert("work_items", item)
+
     t = store.next_id("test_cases", TestCase)
-    test = TestCase(id=f"TEST-{t:03d}", title=f"Verify: {req.title}", description=f"Verify requirement {req.id}.",
-                    status="ready", requirement_ids=[req.id], work_item_ids=[task.id],
-                    steps=["Execute the implemented behavior."],
-                    expected_results=req.acceptance_criteria or [req.statement])
+    test = TestCase(
+        id=f"TEST-{t:03d}", title=f"Verify: {req.title}",
+        description=f"Verify requirement {req.id}.", status="ready",
+        requirement_ids=[req.id], work_item_ids=[subtask.id],
+        steps=["Execute the implemented behavior."],
+        expected_results=req.acceptance_criteria or [req.statement],
+    )
     store.insert("test_cases", test)
+
     l = store.next_id("trace_links", TraceLink)
-    store.insert("trace_links", TraceLink(id=f"TRACE-{l:03d}", source_id=task.id, target_id=req.id, relation="satisfies"))
-    store.insert("trace_links", TraceLink(id=f"TRACE-{l + 1:03d}", source_id=test.id, target_id=req.id, relation="verifies"))
-    return {"work_item": task, "test_case": test}
+    links = [
+        TraceLink(id=f"TRACE-{l:03d}", source_id=issue.id, target_id=req.id, relation="satisfies"),
+        TraceLink(id=f"TRACE-{l + 1:03d}", source_id=task.id, target_id=issue.id, relation="decomposes"),
+        TraceLink(id=f"TRACE-{l + 2:03d}", source_id=subtask.id, target_id=task.id, relation="decomposes"),
+        TraceLink(id=f"TRACE-{l + 3:03d}", source_id=test.id, target_id=req.id, relation="verifies"),
+        TraceLink(id=f"TRACE-{l + 4:03d}", source_id=test.id, target_id=subtask.id, relation="verifies"),
+    ]
+    for link in links:
+        store.insert("trace_links", link)
+    return {
+        "requirement": req, "issue": issue, "task": task, "subtask": subtask,
+        "work_item": subtask, "test_case": test, "trace_links": links,
+    }
 
 @app.get("/api/projects")
 def get_projects():

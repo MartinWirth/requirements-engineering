@@ -223,13 +223,8 @@ def publish_work_item(work_item_id: str):
             branch=work_item.ai_branch,
             title=f"AI implementation: {work_item.title}",
             body=(
-                f"Automated AI implementation for Work Item {work_item.id}.\
-\
-"
-                f"AI summary:\
-{work_item.ai_summary or '(none)'}\
-\
-"
+                f"Automated AI implementation for Work Item {work_item.id}.\n\n"
+                f"AI summary:\n{work_item.ai_summary or '(none)'}\n\n"
                 f"Commit: {work_item.ai_commit}"
             ),
         )

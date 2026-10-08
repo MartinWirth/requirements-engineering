@@ -96,8 +96,10 @@ def commit_changes(root: Path, changed: list[str], work_item_id: str, title: str
             raise AIExecutionError(result.stderr.strip() or f"git {' '.join(args)} failed")
         return result.stdout.strip()
 
-    if git("status", "--porcelain"):
-        raise AIExecutionError("Git working tree is not clean; AI execution will not overwrite existing local changes.")
+    dirty = [line[3:] for line in git("status", "--porcelain").splitlines() if line]
+    unexpected = [path for path in dirty if path not in changed]
+    if unexpected:
+        raise AIExecutionError("Git working tree contains pre-existing local changes: " + ", ".join(unexpected))
     branch = f"ai/{work_item_id}-{re.sub(r'[^A-Za-z0-9_-]+', '-', title).strip('-')[:50]}"
     existing = subprocess.run(["git", "rev-parse", "--verify", branch], cwd=root, capture_output=True, text=True, check=False)
     if existing.returncode == 0:

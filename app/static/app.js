@@ -90,7 +90,8 @@ function setupResizableTable(table,headers){
   const colgroup=document.createElement("colgroup");
   headers.forEach((header,index)=>{
     const col=document.createElement("col");
-    const text=typeof header==="string"?header:label(header.name);
+    const fieldName=typeof header==="string"?header:header.name;
+    const text=fieldName.toLowerCase()==="description"?"Title":typeof header==="string"?header:label(header.name);
     col.style.width=(index===0?150:Math.max(64,text.length*8+28))+"px";
     colgroup.append(col);
   });
@@ -236,6 +237,7 @@ async function loadTable(){
   if(workItemType)rows=rows.filter(row=>row.type===workItemType);
   const key={Requirements:"requirements","User Stories":"user_stories","Use Cases":"use_cases",Actors:"actors",Traceability:"traceability","Work Items":"work_items","Test Cases":"test_cases"}[selectedType];
   if(key&&spec?.project_data?.[key]){const base=spec.project_data[key],ids=new Set(rows.map(r=>r.id));rows=[...base.filter(r=>!ids.has(r.id)),...rows]}
+  rows.sort((a,b)=>String(a.id??"").localeCompare(String(b.id??""),undefined,{numeric:true,sensitivity:"base"}));
   setActiveNav();renderTable();
 }
 function showMessage(text){if(message){message.textContent=text;message.className="success"}}function showError(text){if(message){message.textContent=text;message.className="error"}else console.error(text)}

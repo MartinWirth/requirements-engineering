@@ -91,7 +91,7 @@ function setupResizableTable(table,headers){
   headers.forEach((header,index)=>{
     const col=document.createElement("col");
     const fieldName=typeof header==="string"?header:header.name;
-    const text=fieldName.toLowerCase()==="description"?"Title":typeof header==="string"?header:label(header.name);
+    const text=typeof header==="string"?header:label(header.name);
     col.style.width=(index===0?150:Math.max(64,text.length*8+28))+"px";
     colgroup.append(col);
   });

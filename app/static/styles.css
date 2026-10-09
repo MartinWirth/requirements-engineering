@@ -2,7 +2,7 @@
 *{box-sizing:border-box}body{margin:0}header{height:86px;background:#1f2937;color:#fff;padding:8px 24px;display:flex;flex-direction:column;justify-content:center;gap:5px}
 .header-main,.header-tools{display:flex;align-items:center}.header-tools{height:32px;gap:8px}.header-main{justify-content:space-between}.header-selects{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.app-title{margin-left:auto;white-space:nowrap}
 #modelSelect,#tooltipMode,#aiModelSelect{background:#fff;color:#1f2937}
-#message{font-size:26px;line-height:1.5;min-height:39px;padding:8px 12px;overflow-wrap:anywhere}.success{color:#a7f3d0}.error{color:#fecaca}
+#message{font-size:26px;line-height:1.5;min-height:39px;padding:8px 12px;overflow-wrap:anywhere;border-radius:4px;font-weight:700}.success{color:#065f46}.error{color:#991b1b}#message.success{background:#d1fae5;border-left:6px solid #047857}#message.error{background:#fee2e2;border-left:6px solid #b91c1c}
 
 main{padding:22px 26px;overflow:auto}.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px}.toolbar h1{font-size:22px;margin:0 auto 0 0}
 #filter{width:260px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:5px;font:inherit}

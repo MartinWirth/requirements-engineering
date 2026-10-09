@@ -82,8 +82,8 @@ function editorRow(def,row,isNew=false){
 function button(text){const b=document.createElement("button");b.textContent=text;return b}
 async function saveRow(def,row,editors,isNew,saveButton){
   const payload={};
-  if(isNew&&["Issues","Tasks","Subtasks"].includes(selectedType))payload.type=selectedType.slice(0,-1).toLowerCase();let valid=true;editors.forEach(({field,editor,check})=>{const result=check();if(!result.ok)valid=false;else if(field.name!=="id"&&result.value!=null)payload[field.name]=result.value});if(!valid)return showError("Please correct the highlighted values.");saveButton.disabled=true;
-  try{const url=isNew?def.endpoint:def.endpoint+"/"+encodeURIComponent(row.id),method=isNew?"POST":"PUT";const response=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(isNew?payload:{...payload,id:row.id})});if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(detail.detail||"Save failed")}showMessage(isNew?"Element created.":"Element updated.");await loadTable()}catch(error){showError(error.message);saveButton.disabled=false}
+  if(isNew&&["Issues","Tasks","Subtasks"].includes(selectedType))payload.type=selectedType.slice(0,-1).toLowerCase();let valid=true;editors.forEach(({field,editor,check})=>{const result=check();if(!result.ok)valid=false;else if(field.name!=="id"&&result.value!=null)payload[field.name]=result.value});if(!valid)return actionError(row,"Please correct the highlighted values.");saveButton.disabled=true;
+  try{const url=isNew?def.endpoint:def.endpoint+"/"+encodeURIComponent(row.id),method=isNew?"POST":"PUT";const response=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(isNew?payload:{...payload,id:row.id})});if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(detail.detail||"Save failed")}actionMessage(row,isNew?"Element created.":"Element updated.");await loadTable()}catch(error){actionError(row,error.message);saveButton.disabled=false}
 }
 function setupResizableTable(table,headers){
   table.classList.add("resizable-table");

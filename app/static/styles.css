@@ -25,7 +25,7 @@ button{padding:7px 12px;cursor:pointer;border:1px solid #b8c2cc;border-radius:4p
 .trace-status.pending{background:#f1f5f9;color:#475467}
 
 /* Scrollable data lists with draggable column boundaries */
-#tableContainer{width:100%;max-height:calc(100vh - 205px);overflow:auto;resize:vertical;border:1px solid #d8dee6;background:#fff}
+#tableContainer{width:100%;max-height:calc(100vh - 205px);overflow-x:auto;overflow-y:auto;resize:vertical;border:1px solid #d8dee6;background:#fff}
 #tableContainer table{table-layout:fixed;min-width:100%;width:max-content}
 #tableContainer th,#tableContainer td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tableContainer th{position:sticky;top:0;z-index:2;padding-right:14px}

@@ -117,7 +117,10 @@ function setupResizableTable(table,headers){
   });
 }
 function renderCreate(){container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});const thead=table.createTHead();thead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));setupResizableTable(table,["Action",...definition().fields]);container.append(table)}
-function initiatorModelId(row){return selectedType+" / "+(row?.id??"(new)")}\nfunction actionMessage(row,text){showMessage("[Initiator model: "+initiatorModelId(row)+"] "+text)}\nfunction actionError(row,text){showError("[Initiator model: "+initiatorModelId(row)+"] "+text)}\nasync function runTest(row){
+function initiatorRecordId(row){return row?.id??"(new)"}
+function actionMessage(row,text){showMessage("[Record ID: "+initiatorRecordId(row)+"] "+text)}
+function actionError(row,text){showError("[Record ID: "+initiatorRecordId(row)+"] "+text)}
+async function runTest(row){
   const response=await fetch("/api/test-cases/"+encodeURIComponent(row.id)+"/run",{method:"POST"});
   if(!response.ok){const d=await response.json().catch(()=>({}));return actionError(row,d.detail||"Test execution failed")}
   const result=await response.json();actionMessage(row,row.id+" executed: "+result.status+".");await loadTable();

@@ -117,10 +117,10 @@ function setupResizableTable(table,headers){
   });
 }
 function renderCreate(){container.replaceChildren();const table=document.createElement("table"),head=document.createElement("tr"),th=document.createElement("th");th.textContent="Action";head.append(th);definition().fields.forEach(field=>{const x=document.createElement("th");addHeaderTooltip(x,field);head.append(x)});const thead=table.createTHead();thead.append(head);const body=table.createTBody();body.append(editorRow(definition(),{},true));setupResizableTable(table,["Action",...definition().fields]);container.append(table)}
-async function runTest(row){
+function initiatorModelId(row){return selectedType+" / "+(row?.id??"(new)")}\nfunction actionMessage(row,text){showMessage("[Initiator model: "+initiatorModelId(row)+"] "+text)}\nfunction actionError(row,text){showError("[Initiator model: "+initiatorModelId(row)+"] "+text)}\nasync function runTest(row){
   const response=await fetch("/api/test-cases/"+encodeURIComponent(row.id)+"/run",{method:"POST"});
-  if(!response.ok){const d=await response.json().catch(()=>({}));return showError(d.detail||"Test execution failed")}
-  const result=await response.json();showMessage(row.id+" executed: "+result.status+".");await loadTable();
+  if(!response.ok){const d=await response.json().catch(()=>({}));return actionError(row,d.detail||"Test execution failed")}
+  const result=await response.json();actionMessage(row,row.id+" executed: "+result.status+".");await loadTable();
 }
 async function executeTest(row){
   const actual=prompt("Actual result:",row.actual_result||"");
@@ -128,24 +128,24 @@ async function executeTest(row){
   const status=prompt("Outcome: passed, failed, or blocked",row.status==="ready"?"passed":row.status);
   if(status===null)return;
   const value=status.trim().toLowerCase();
-  if(!["passed","failed","blocked"].includes(value))return showError("Outcome must be passed, failed, or blocked.");
+  if(!["passed","failed","blocked"].includes(value))return actionError(row,"Outcome must be passed, failed, or blocked.");
   const response=await fetch("/api/test-cases/"+encodeURIComponent(row.id)+"/execute",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:value,actual_result:actual})});
-  if(!response.ok){const d=await response.json().catch(()=>({}));return showError(d.detail||"Execution failed")}
-  showMessage(row.id+" executed: "+value+".");await loadTable();
+  if(!response.ok){const d=await response.json().catch(()=>({}));return actionError(row,d.detail||"Execution failed")}
+  actionMessage(row,row.id+" executed: "+value+".");await loadTable();
 }
 async function aiExecute(row){
   if(!confirm("Execute this work item with the configured AI API? The AI may modify project files and run tests."))return;
   const response=await fetch("/api/work-items/"+encodeURIComponent(row.id)+"/ai-execute",{method:"POST"});
   const result=await response.json().catch(()=>({}));
-  if(!response.ok)return showError(result.detail||"AI execution failed");
-  showMessage(row.id+" AI execution: "+result.work_item.status+" ("+(result.changed_files||[]).length+" files changed).");await loadTable();
+  if(!response.ok)return actionError(row,result.detail||"AI execution failed");
+  actionMessage(row,row.id+" AI execution: "+result.work_item.status+" ("+(result.changed_files||[]).length+" files changed).");await loadTable();
 }
 async function publishPR(row){
   if(!confirm("Push branch "+row.ai_branch+" to GitHub and create a pull request?"))return;
   const response=await fetch("/api/work-items/"+encodeURIComponent(row.id)+"/publish",{method:"POST"});
   const result=await response.json().catch(()=>({}));
-  if(!response.ok)return showError(result.detail||"GitHub publication failed");
-  showMessage(row.id+" published: "+(result.github?.url||"pull request created"));await loadTable();
+  if(!response.ok)return actionError(row,result.detail||"GitHub publication failed");
+  actionMessage(row,row.id+" published: "+(result.github?.url||"pull request created"));await loadTable();
 }
 async function generate(row){
   const endpoint="/api/requirements/"+encodeURIComponent(row.id)+"/generate";
@@ -155,14 +155,14 @@ async function generate(row){
     const create=await fetch("/api/requirements",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(row)});
     if(!create.ok&&create.status!==409){
       const detail=await create.json().catch(()=>({}));
-      return showError(detail.detail||"Requirement could not be stored.");
+      return actionError(row,detail.detail||"Requirement could not be stored.");
     }
     response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requirement:row})});
     result=await response.json().catch(()=>({}));
   }
-  if(!response.ok)return showError(result.detail||"Generation failed");
+  if(!response.ok)return actionError(row,result.detail||"Generation failed");
   const issue=result.issue?.id||"issue",task=result.task?.id||"task",subtask=result.subtask?.id||result.work_item?.id||"subtask",test=result.test_case?.id||"test";
-  showMessage(issue+" → "+task+" → "+subtask+" → "+test+" created.");
+  actionMessage(row,issue+" → "+task+" → "+subtask+" → "+test+" created.");
   selectedType="Work Items";
   filter.value="";
   await loadTable();
